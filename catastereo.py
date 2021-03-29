@@ -115,7 +115,7 @@ cv2.imshow('select border', img)
 # Disparity Computation 
 ###############################################################################
 stereo = cv2.StereoSGBM_create(numDisparities=50, blockSize=8, speckleRange=200, speckleWindowSize=30)
-disparity = stereo.compute(imgL,imgR) 
+disparity = stereo.compute(imgR,imgL)
 print('disparity.shape = ' + str(disparity.shape))
 
 #cv2.namedWindow('disparity map', cv2.WINDOW_NORMAL)
