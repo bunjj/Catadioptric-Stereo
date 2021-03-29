@@ -1,5 +1,7 @@
 import numpy as np
 import cv2
+from matplotlib import pyplot as plt
+from operator import itemgetter
 
 # read BGR image
 # https://opencv-python-tutroals.readthedocs.io/en/latest/py_tutorials/py_gui/py_image_display/py_image_display.html
@@ -61,6 +63,41 @@ cv2.imshow('select border', img)
 
 
 ###############################################################################
+# SIFT Features
+###############################################################################
+# print('SIFT_detector is called: ')
+#
+# # Initiate SIFT detector
+# sift = cv2.SIFT_create()
+#
+# # find the keypoints and descriptors with SIFT
+# kp1, des1 = sift.detectAndCompute(imgL, None)
+# kp2, des2 = sift.detectAndCompute(imgR, None)
+#
+# # BFMatcher with default params
+# bf = cv2.BFMatcher()
+# matches = bf.knnMatch(des1, des2, k=2)
+#
+# # Apply ratio test
+# good = []
+# for m, n in matches:
+#     if m.distance < 0.75 * n.distance:
+#         good.append([m])
+#
+# # cv2.drawMatchesKnn expects list of lists as matches.
+# img3 = cv2.drawMatchesKnn(imgL, kp1, imgR, kp2, good, flags=2, outImg=None)
+#
+# point = kp1[1].pt
+# for x in kp1:
+#      if (x.pt[0] < point[0]):
+#         point = x.pt
+#
+# plt.imshow(img3), plt.show()
+#
+# print('SIFT_detector has ended: ')
+
+
+###############################################################################
 # Camera Calibration
 ###############################################################################
 
@@ -77,7 +114,7 @@ cv2.imshow('select border', img)
 ###############################################################################
 # Disparity Computation 
 ###############################################################################
-stereo = cv2.StereoSGBM_create(numDisparities=16, blockSize=15)
+stereo = cv2.StereoSGBM_create(numDisparities=50, blockSize=8, speckleRange=200, speckleWindowSize=30)
 disparity = stereo.compute(imgL,imgR) 
 print('disparity.shape = ' + str(disparity.shape))
 
