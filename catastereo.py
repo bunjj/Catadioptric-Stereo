@@ -128,8 +128,8 @@ pts2 = pts2[mask.ravel() == 1]
 # Essential from Fundamental
 # (https://docs.opencv.org/master/d9/d0c/group__calib3d.html#ga0c86f6478f36d5be6e450751bbf4fec0)
 E, mask2 = cv2.findEssentialMat(pts1, pts2, cameraMatrix=K)
+print('Essential Matrix')
 print(E)
-print(mask2)
 
 # Find epilines corresponding to points in right image (second image) and
 # drawing its lines on left image
