@@ -86,38 +86,44 @@ bf = cv2.BFMatcher()
 matches = bf.knnMatch(des1, des2, k=2)
 
 ########### (https://docs.opencv.org/master/da/de9/tutorial_py_epipolar_geometry.html)
+
 def drawlines(img1, img2, lines, pts1, pts2):
     ''' img1 - image on which we draw the epilines for the points in img2
         lines - corresponding epilines '''
     r, c = img1.shape
     img1 = cv2.cvtColor(img1, cv2.COLOR_GRAY2BGR)
     img2 = cv2.cvtColor(img2, cv2.COLOR_GRAY2BGR)
-    for r, pt1, pt2 in zip(lines,pts1,pts2):
-        color = tuple(np.random.randint(0,255,3).tolist())
-        x0, y0 = map(int, [0, -r[2]/r[1]])
-        x1, y1 = map(int, [c, -(r[2]+r[0]*c)/r[1]])
+    for r, pt1, pt2 in zip(lines, pts1, pts2):
+        color = tuple(np.random.randint(0, 255, 3).tolist())
+        x0, y0 = map(int, [0, -r[2]/r[1] ])
+        x1, y1 = map(int, [c, -(r[2]+r[0]*c)/r[1] ])
         img1 = cv2.line(img1, (x0, y0), (x1, y1), color, 1)
         img1 = cv2.circle(img1, tuple(pt1), 5, color, -1)
         img2 = cv2.circle(img2, tuple(pt2), 5, color, -1)
     return img1, img2
 
-FLANN_INDEX_KDTREE = 1
+FLANN_INDEX_KDTREE = 0
 index_params = dict(algorithm=FLANN_INDEX_KDTREE, trees=5)
 search_params = dict(checks=50)
 flann = cv2.FlannBasedMatcher(index_params, search_params)
+
 matches = flann.knnMatch(des1, des2, k=2)
+
+good = []
 pts1 = []
 pts2 = []
 
-# ratio test as per Lowe's paper
 for i, (m, n) in enumerate(matches):
     if m.distance < 0.8*n.distance:
+        good.append(m)
         pts2.append(kp2[m.trainIdx].pt)
         pts1.append(kp1[m.queryIdx].pt)
 
 pts1 = np.int32(pts1)
 pts2 = np.int32(pts2)
-F, mask = cv2.findFundamentalMat(pts1, pts2, cv2.FM_LMEDS)
+F, mask = cv2.findFundamentalMat(pts1, pts2, method=cv2.RANSAC)
+print('Fundamental Matrix')
+print(F)
 
 # (https://stackoverflow.com/questions/59014376/what-do-i-do-with-the-fundamental-matrix)
 
@@ -127,7 +133,7 @@ pts2 = pts2[mask.ravel() == 1]
 
 # Essential from Fundamental
 # (https://docs.opencv.org/master/d9/d0c/group__calib3d.html#ga0c86f6478f36d5be6e450751bbf4fec0)
-E, mask2 = cv2.findEssentialMat(pts1, pts2, cameraMatrix=K)
+E, mask2 = cv2.findEssentialMat(pts1, pts2, cameraMatrix=K, method=cv2.RANSAC)
 print('Essential Matrix')
 print(E)
 
