@@ -81,6 +81,14 @@ sift = cv2.SIFT_create()
 kp1, des1 = sift.detectAndCompute(imgL, None)
 kp2, des2 = sift.detectAndCompute(imgR, None)
 
+# show the descriptors
+key_img = imgL.copy()
+
+plt.figure(figsize=(15,15))
+plt.subplot(121), plt.imshow(cv2.drawKeypoints(imgL,kp1,key_img,flags=cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS))
+plt.subplot(122), plt.imshow(cv2.drawKeypoints(imgR,kp2,key_img,flags=cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS))
+plt.show()
+
 # BFMatcher with default params
 bf = cv2.BFMatcher()
 matches = bf.knnMatch(des1, des2, k=2)
@@ -161,7 +169,7 @@ for m, n in matches:
         good.append([m])
 
 # cv2.drawMatchesKnn expects list of lists as matches.
-img3 = cv2.drawMatchesKnn(imgR, kp1, imgR, kp2, good, flags=2, outImg=None)
+img3 = cv2.drawMatchesKnn(imgL, kp1, imgR, kp2, good, flags=2, outImg=None)
 
 point = kp1[1].pt
 for x in kp1:
@@ -198,9 +206,22 @@ plt.show()
 ###############################################################################
 # Image Rectification
 ###############################################################################
+def computeEpipole(lL,lR):
+    # intersection of lines gives eipoles (left and right)
+    interL = np.cross(lL[0],lL)[1:]
+    interR = np.cross(lR[0],lR)[1:]
+    # normalize homo. line vector and take median
+    eL = (np.median((interL/interL[:,2].reshape(-1,1)),axis=0)).astype(int)
+    eR = (np.median((interR/interR[:,2].reshape(-1,1)),axis=0)).astype(int)
+    return (eL[0:2],eR[0:2])
+eL,eR = computeEpipole(lines1,lines2)
 
-
-
+rectL = cv2.linearPolar(imgL,tuple(eL),1000,cv2.WARP_FILL_OUTLIERS)
+rectR = cv2.linearPolar(imgR,tuple(eR),1000,cv2.WARP_FILL_OUTLIERS)
+plt.figure(figsize=(15,14))
+plt.subplot(121), plt.imshow(rectL)
+plt.subplot(122), plt.imshow(rectR)
+plt.show()
 
 ###############################################################################
 # Disparity Computation 
