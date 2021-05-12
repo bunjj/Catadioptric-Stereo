@@ -4,8 +4,8 @@ from matplotlib import pyplot as plt
 import glob
 # from operator import itemgetter
 
-def mirror_detection():
-    cap = cv2.VideoCapture('/Users/dominikbornand/Desktop/ETHZ/FS21/3D_Vision/Catadioptric-Stereo/animation/movie_small.avi') 
+def mirror_detection(path):
+    cap = cv2.VideoCapture(path) 
     #https://opencv-python-tutroals.readthedocs.io/en/latest/py_tutorials/py_gui/py_video_display/py_video_display.html
     #https://docs.opencv.org/3.4/d4/dee/tutorial_optical_flow.html
 
@@ -122,8 +122,8 @@ def mirror_detection():
     
     return mirror_position_x
 
-def draw_mirror_line(mirror_position):
-    cap = cv2.VideoCapture('/Users/dominikbornand/Desktop/ETHZ/FS21/3D_Vision/Catadioptric-Stereo/animation/movie_small.avi')
+def draw_mirror_line(mirror_position, path):
+    cap = cv2.VideoCapture(path)
     # draw black line at x
     ret, frame = cap.read()
 
@@ -286,12 +286,13 @@ def calculate_disparity(rectR , rectL):
     cv2.destroyAllWindows() # close all windows
     return disparity
 
-cap = cv2.VideoCapture('/Users/dominikbornand/Desktop/ETHZ/FS21/3D_Vision/Catadioptric-Stereo/animation/movie_small.avi')
+path = '/Users/dominikbornand/Desktop/ETHZ/FS21/3D_Vision/Catadioptric-Stereo/animation/movie_small.avi'
+cap = cv2.VideoCapture(path)
 ret, frame = cap.read()
 frame_gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
-mirror_position = mirror_detection()
-draw_mirror_line(mirror_position)
+mirror_position = mirror_detection(path)
+draw_mirror_line(mirror_position, path)
 print('I am here now 1')
 K = get_intrinsics()
 
