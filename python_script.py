@@ -276,11 +276,10 @@ def getRotTrans(E):
     return (R,t)
 
 def calculate_disparity(rectR , rectL):
-    #stereo = cv2.StereoSGBM_create(minDisparity = -20,numDisparities=50, blockSize=18, speckleRange=50, speckleWindowSize=30, uniquenessRatio=9)
+    stereo = cv2.StereoSGBM_create(minDisparity = -20,numDisparities=50, blockSize=18, speckleRange=50, speckleWindowSize=30, uniquenessRatio=9)
     
-    stereo = cv2.StereoBM_create(48,19)
+    # stereo = cv2.StereoBM_create(48,19)
     disparity = stereo.compute(rectL , rectR)
-    print('disparity.shape = ' + str(disparity.shape))
 
     return disparity
 
@@ -305,6 +304,7 @@ cv2.destroyAllWindows()
 plt.close('all')
 
 fig = plt.figure()
+iterator = 0
 
 while(cap.isOpened()):
     ret, frame = cap.read()
@@ -313,7 +313,7 @@ while(cap.isOpened()):
         imgR, imgL = get_right_and_left_image(mirror_position, frame)
         rectR , rectL = rectification(imgR, imgL, pts1, pts2, F)
         disparity = calculate_disparity(rectR, rectL)
-        # out.write(np.uint8(disparity))
+        
         fig.canvas.draw()
         plt.imshow(disparity)
 
@@ -328,7 +328,13 @@ while(cap.isOpened()):
         img = cv2.cvtColor(img,cv2.COLOR_RGB2BGR)
 
         # display image with opencv or any operation you like
-        cv2.imshow("plot",img)
+        cv2.imshow('output',img)
+        cap.set(1, iterator)
+        # out.write(np.uint8(img))
+        print(iterator)
+        iterator = iterator+5
+
+        # cv2.imshow("plot",img)
     
     else:
         break
