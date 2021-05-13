@@ -2,6 +2,8 @@ import numpy as np
 import cv2
 from matplotlib import pyplot as plt
 import glob
+import time
+import matplotlib; matplotlib.use('agg')
 # from operator import itemgetter
 
 def mirror_detection(path):
@@ -154,6 +156,8 @@ def draw_mirror_line(mirror_position, path):
 def get_right_and_left_image(mirror_position, img):
     x = mirror_position
     new_width = x
+    # flip right image horizontally
+    img[:,x+1:,:] = cv2.flip(img[:,x+1:,:], 1) 
     imgR = cv2.cvtColor(img[:,:x,:], cv2.COLOR_BGR2GRAY)
     imgL = cv2.cvtColor(img[:,x+1:x+1+new_width,:], cv2.COLOR_BGR2GRAY)
     return imgR, imgL   
@@ -273,41 +277,67 @@ def getRotTrans(E):
 
 def calculate_disparity(rectR , rectL):
     #stereo = cv2.StereoSGBM_create(minDisparity = -20,numDisparities=50, blockSize=18, speckleRange=50, speckleWindowSize=30, uniquenessRatio=9)
+    
     stereo = cv2.StereoBM_create(48,19)
     disparity = stereo.compute(rectL , rectR)
-    #disparity = stereo.compute(rectL,rectR)
     print('disparity.shape = ' + str(disparity.shape))
 
-    #cv2.namedWindow('disparity map', cv2.WINDOW_NORMAL)
-    #cv2.setWindowProperty('disparity map', cv2.WINDOW_FULLSCREEN, 1)
-    #cv2.imshow('disparity map', disparity / disparity.max())
-
-    #cv2.waitKey(2 * 60 * 1000) & 0xFF # continue after keypress or after 2min = 2 * 60 * 1000ms
-    cv2.destroyAllWindows() # close all windows
     return disparity
 
 path = '/Users/dominikbornand/Desktop/ETHZ/FS21/3D_Vision/Catadioptric-Stereo/animation/movie_small.avi'
 cap = cv2.VideoCapture(path)
 ret, frame = cap.read()
 frame_gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+print(frame.shape)
 
-mirror_position = mirror_detection(path)
+# mirror_position = mirror_detection(path)
+mirror_position = 408
 draw_mirror_line(mirror_position, path)
-print('I am here now 1')
 K = get_intrinsics()
-
-print('I am here now 2')
 E, F, pts1, pts2 = calculate_E_F(mirror_position, frame)
 
-print('I am here now 3')
-imgR, imgL = get_right_and_left_image(mirror_position, frame)
 
-print('I am here now 4')
-rectR , rectL = rectification(imgR, imgL, pts1, pts2, F)
+size = (frame.shape[0], frame.shape[1])
+print(frame.shape)
+fourcc = cv2.VideoWriter_fourcc('m', 'p', '4', 'v')
+out = cv2.VideoWriter(filename = 'outpy.avi', fourcc = fourcc, fps = 5, frameSize = (540, 399))
+cv2.destroyAllWindows()
+plt.close('all')
 
-print('I am here now 5')
-disparity = calculate_disparity(rectR, rectL)
-plt.figure(figsize=(15,14))
-plt.subplot(121), plt.imshow(disparity)
-# plt.subplot(122), plt.imshow(rectR)
-plt.show()
+fig = plt.figure()
+
+while(cap.isOpened()):
+    ret, frame = cap.read()
+    
+    if ret:
+        imgR, imgL = get_right_and_left_image(mirror_position, frame)
+        rectR , rectL = rectification(imgR, imgL, pts1, pts2, F)
+        disparity = calculate_disparity(rectR, rectL)
+        # out.write(np.uint8(disparity))
+        fig.canvas.draw()
+        plt.imshow(disparity)
+
+        # redraw the canvas
+        fig.canvas.draw()
+
+        # convert canvas to image
+        img = np.fromstring(fig.canvas.tostring_rgb(), dtype=np.uint8, sep='')
+        img  = img.reshape(fig.canvas.get_width_height()[::-1] + (3,))
+
+        # img is rgb, convert to opencv's default bgr
+        img = cv2.cvtColor(img,cv2.COLOR_RGB2BGR)
+
+        # display image with opencv or any operation you like
+        cv2.imshow("plot",img)
+    
+    else:
+        break
+
+    key = cv2.waitKey(1) & 0xFF
+    # if the `q` key was pressed, break from the loop
+    if key == ord("q"):
+        break
+
+cap.release()
+out.release()
+cv2.destroyAllWindows()
