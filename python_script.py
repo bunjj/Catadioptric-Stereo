@@ -13,7 +13,7 @@ output_step = 50
 mirror_detection_case = 2 # 0: Default value "877" 1: automatic 2: manual
 automatic_mirror_detection_grid_size = 100
 path = '/Users/dominikbornand/Desktop/ETHZ/FS21/3D_Vision/Catadioptric-Stereo/animation/animation_2_0.mkv'
-disparity_path = '/Users/dominikbornand/Desktop/ETHZ/FS21/3D_Vision/disparity_img/'# path where disparity images are saved
+output_path = '/Users/dominikbornand/Desktop/ETHZ/FS21/3D_Vision/img/'# path where disparity images are saved
 
 # functions
 def automatic_mirror_detection(path, grid_size):
@@ -203,10 +203,12 @@ def get_intrinsics():
               [0.0000,    0.0000,   1.0000]])
     return K
 
-def calculate_E_F(mirror_position, img):
+def calculate_E_F(mirror_position, img, real_output_path):
+    
     imgR, imgL = get_right_and_left_image(mirror_position, img)
-    print('SIFT_detector is called: ')
+    
     # Initiate SIFT detector
+    print('SIFT_detector is called: ')
     sift = cv2.SIFT_create(contrastThreshold = 0.02)
 
     # find the keypoints and descriptors with SIFT
@@ -215,10 +217,10 @@ def calculate_E_F(mirror_position, img):
 
     key_img = imgL.copy()
 
-    # plt.figure(figsize=(15,15))
-    # plt.subplot(121), plt.imshow(cv2.drawKeypoints(imgL,kp1,key_img,flags=cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS))
-    # plt.subplot(122), plt.imshow(cv2.drawKeypoints(imgR,kp2,key_img,flags=cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS))
-    # plt.show()
+    plt.figure(figsize=(15,15))
+    plt.subplot(121), plt.imshow(cv2.drawKeypoints(imgL,kp1,key_img,flags=cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS))
+    plt.subplot(122), plt.imshow(cv2.drawKeypoints(imgR,kp2,key_img,flags=cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS))
+    plt.savefig(real_output_path+'/sift_features.png')
 
     # BFMatcher with default params
     bf = cv2.BFMatcher()
@@ -247,7 +249,7 @@ def calculate_E_F(mirror_position, img):
 
     # F, mask = cv2.findFundamentalMat(pts1, pts2, method=cv2.RANSAC)
     F, mask = cv2.findFundamentalMat(pts1, pts2, method=cv2.FM_7POINT)
-    print('Fundamental Matrix')
+    print('\nFundamental Matrix: ')
     print(F)
     # (https://stackoverflow.com/questions/59014376/what-do-i-do-with-the-fundamental-matrix)
 
@@ -259,7 +261,7 @@ def calculate_E_F(mirror_position, img):
     # (https://docs.opencv.org/master/d9/d0c/group__calib3d.html#ga0c86f6478f36d5be6e450751bbf4fec0)
     #E, mask2 = cv2.findEssentialMat(pts1, pts2, cameraMatrix=K, method=cv2.RANSAC)
     E, mask2 = cv2.findEssentialMat(pts1, pts2, cameraMatrix=K, method=cv2.FM_7POINT)
-    print('Essential Matrix')
+    print('\nEssential Matrix: ')
     print(E)
 
     # Apply ratio test
@@ -275,8 +277,10 @@ def calculate_E_F(mirror_position, img):
     for x in kp1:
         if (x.pt[0] < point[0]):
             point = x.pt
-    # plt.figure(figsize=(15,15))
-    # plt.imshow(img3), plt.show()
+    plt.figure(figsize=(15,15))
+    plt.imshow(img3)
+    plt.savefig(real_output_path+'/sift_matches.png')
+
 
     return E, F, pts1, pts2
 
@@ -320,6 +324,11 @@ cap = cv2.VideoCapture(path)
 ret, frame = cap.read()
 frame_gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
+time_now = str(time.asctime( time.localtime(time.time()) ))
+real_output_path = (output_path+'/'+time_now)
+os.mkdir(real_output_path)
+os.mkdir(real_output_path+'/disparity_img')
+
 # mirror_position = mirror_detection(path)
 try:
     if mirror_detection_case == 0:
@@ -335,7 +344,7 @@ except:
 
 draw_mirror_line(mirror_position, path)
 K = get_intrinsics()
-E, F, pts1, pts2 = calculate_E_F(mirror_position, frame)
+E, F, pts1, pts2 = calculate_E_F(mirror_position, frame, real_output_path)
 
 
 size = (frame.shape[0], frame.shape[1])
@@ -348,17 +357,18 @@ plt.close('all')
 fig = plt.figure()
 
 iterator = 0
-time_now = str(time.asctime( time.localtime(time.time()) ))
-os.mkdir(disparity_path+'/'+time_now)
 
 nFrames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
 
 while(cap.isOpened()):
     ret, frame = cap.read()
 
+    # not working properly 
+    """ 
     if (iterator >= nFrames):
         cv2.destroyAllWindows()
-        break
+        break 
+    """
     
     if ret:
         imgR, imgL = get_right_and_left_image(mirror_position, frame)
@@ -383,7 +393,7 @@ while(cap.isOpened()):
         cap.set(1, iterator)
         out.write(np.uint8(img))
 
-        cv2.imwrite(disparity_path+'/'+time_now+'/{0}.png'.format(iterator), img)
+        cv2.imwrite(output_path+'/'+time_now+'/disparity_img/{0}.png'.format(iterator), img)
 
         print('Number of frame: ', iterator, ' iteration step: ', output_step)
         iterator = iterator+output_step
@@ -402,3 +412,5 @@ cv2.waitKey(0)
 cap.release()
 out.release()
 cv2.destroyAllWindows()
+print('script has ended.')
+sys.exit()
