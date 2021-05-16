@@ -181,11 +181,9 @@ def draw_mirror_line(mirror_position, path):
     imgR = cv2.cvtColor(img[:,:x,:], cv2.COLOR_BGR2GRAY)
     imgL = cv2.cvtColor(img[:,x+1:x+1+new_width,:], cv2.COLOR_BGR2GRAY)
 
-    cv2.imshow('select border', img)
-    #cv2.imshow('imgL', imgL)
-    #cv2.imshow('imgR', imgR)
-    # cv2.waitKey(0)
-    # cv2.destroyAllWindows()
+    cv2.imwrite(real_output_path+'/imgL.png',imgL)
+    cv2.imwrite(real_output_path+'/imgR.png',imgR)
+    cv2.imwrite(real_output_path+'/select_border.png',img)
 
 def get_right_and_left_image(mirror_position, img):
     x = mirror_position
@@ -203,7 +201,7 @@ def get_intrinsics():
               [0.0000,    0.0000,   1.0000]])
     return K
 
-def calculate_E_F(mirror_position, img, real_output_path):
+def calculate_E_F(mirror_position, img):
     
     imgR, imgL = get_right_and_left_image(mirror_position, img)
     
@@ -309,8 +307,7 @@ def getRotTrans(E):
     tx = np.matmul(U,np.matmul(W,np.matmul(S,U.T)))
     mask = [[2,1],[0,2],[1,0]]
     t = tx[[2,0,1],[1,2,0]].reshape(-1,1)
-    # print
-    print(np.round(R,decimals=2),np.round(t,decimals=2))
+    print('\n\nRatation from one camera to the other:\n',np.round(R,decimals=2),'\n\nTranslation from one camera to the other:\n',np.round(t,decimals=2))
     return (R,t)
 
 def calculate_disparity(rectR , rectL):
@@ -344,11 +341,10 @@ except:
 
 draw_mirror_line(mirror_position, path)
 K = get_intrinsics()
-E, F, pts1, pts2 = calculate_E_F(mirror_position, frame, real_output_path)
-
+E, F, pts1, pts2 = calculate_E_F(mirror_position, frame)
+_ , _ = getRotTrans(E)
 
 size = (frame.shape[0], frame.shape[1])
-print(frame.shape)
 fourcc = cv2.VideoWriter_fourcc('m', 'p', '4', 'v')
 out = cv2.VideoWriter(filename = 'outpy.avi', fourcc = fourcc, fps = 5, frameSize = (480, 640))
 cv2.destroyAllWindows()
@@ -360,6 +356,7 @@ iterator = 0
 
 nFrames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
 
+print('\n\n\nStart of img reading of mov clip and building of disparity map.\n')
 while(cap.isOpened()):
     ret, frame = cap.read()
 
