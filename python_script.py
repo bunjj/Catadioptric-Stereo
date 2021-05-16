@@ -12,7 +12,7 @@ output_step = 5
 mirror_detection_case = 2 # 0: Default value 877 1: automatic 2: manual
 automatic_mirror_detection_grid_size = 100
 path = '/Users/dominikbornand/Desktop/ETHZ/FS21/3D_Vision/Catadioptric-Stereo/animation/animation_2_0.mkv'
-
+disparity_path = '/Users/dominikbornand/Desktop/ETHZ/FS21/3D_Vision/disparity_img/'# path where disparity images are saved
 
 # functions
 def automatic_mirror_detection(path, grid_size):
@@ -310,8 +310,6 @@ def getRotTrans(E):
 
 def calculate_disparity(rectR , rectL):
     stereo = cv2.StereoSGBM_create(minDisparity = -20,numDisparities=50, blockSize=18, speckleRange=50, speckleWindowSize=30, uniquenessRatio=9)
-    
-    # stereo = cv2.StereoBM_create(48,19)
     disparity = stereo.compute(rectL , rectR)
 
     return disparity
@@ -320,7 +318,6 @@ def calculate_disparity(rectR , rectL):
 cap = cv2.VideoCapture(path)
 ret, frame = cap.read()
 frame_gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-print(frame.shape)
 
 # mirror_position = mirror_detection(path)
 try:
@@ -370,16 +367,15 @@ while(cap.isOpened()):
 
         # img is rgb, convert to opencv's default bgr
         img = cv2.cvtColor(img,cv2.COLOR_RGB2BGR)
-        print(img.shape)
 
         # display image with opencv or any operation you like
         cv2.imshow('output',img)
         cap.set(1, iterator)
         out.write(np.uint8(img))
 
-        cv2.imwrite('/Users/dominikbornand/Desktop/ETHZ/FS21/3D_Vision/disparity_img/disparity_{0}.png'.format(iterator), img)
+        cv2.imwrite(disparity_path+'_{0}.png'.format(iterator), img)
 
-        print('Number of frame: ', iterator)
+        print('Number of frame: ', iterator, ' iteration step: ', output_step)
         iterator = iterator+output_step
     
     else:
