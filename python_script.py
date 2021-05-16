@@ -8,14 +8,14 @@ import sys
 # from operator import itemgetter
 
 # variables
-output_step = 50
-mirror_detection_case = 2
-# path = '/Users/dominikbornand/Desktop/ETHZ/FS21/3D_Vision/Catadioptric-Stereo/animation/movie_small.avi'
+output_step = 5
+mirror_detection_case = 2 # 0: Default value 877 1: automatic 2: manual
+automatic_mirror_detection_grid_size = 100
 path = '/Users/dominikbornand/Desktop/ETHZ/FS21/3D_Vision/Catadioptric-Stereo/animation/animation_2_0.mkv'
 
 
 # functions
-def automatic_mirror_detection(path):
+def automatic_mirror_detection(path, grid_size):
     cap = cv2.VideoCapture(path) 
     #https://opencv-python-tutroals.readthedocs.io/en/latest/py_tutorials/py_gui/py_video_display/py_video_display.html
     #https://docs.opencv.org/3.4/d4/dee/tutorial_optical_flow.html
@@ -40,14 +40,14 @@ def automatic_mirror_detection(path):
     old_gray = cv2.cvtColor(old_frame, cv2.COLOR_BGR2GRAY)
     frame_size = old_gray.shape # frame size x and y are changed
 
-    grid_size = 10
+    grid_size = grid_size
     x = np.zeros((grid_size**2,1,2),np.float32)
     for xx in range(grid_size):
         for yy in range(grid_size):
             x[(xx*grid_size)+yy][0][0] = (frame_size[1]/grid_size)*(yy+1)
             x[(xx*grid_size)+yy][0][1] = (frame_size[0]/grid_size)*(xx+1)
 
-    grid_size_2 = 100
+    grid_size_2 = grid_size
     x_2 = np.zeros((grid_size_2,1,2), np.float32)
     for xx in range(grid_size_2):
             x_2[(xx)][0][0] = (frame_size[1]/grid_size_2)*(xx+1)
@@ -327,7 +327,7 @@ try:
     if mirror_detection_case == 0:
         mirror_position = 877
     elif mirror_detection_case == 1:
-        mirror_position = automatic_mirror_detection(path)
+        mirror_position = automatic_mirror_detection(path, automatic_mirror_detection_grid_size)
     elif mirror_detection_case == 2:
         mirror_position = manual_mirror_detection(path)
 except:
