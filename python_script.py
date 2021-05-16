@@ -5,11 +5,12 @@ import glob
 import time
 import matplotlib; matplotlib.use('agg')
 import sys
+import os
 # from operator import itemgetter
 
 # variables
-output_step = 5
-mirror_detection_case = 2 # 0: Default value 877 1: automatic 2: manual
+output_step = 50
+mirror_detection_case = 2 # 0: Default value "877" 1: automatic 2: manual
 automatic_mirror_detection_grid_size = 100
 path = '/Users/dominikbornand/Desktop/ETHZ/FS21/3D_Vision/Catadioptric-Stereo/animation/animation_2_0.mkv'
 disparity_path = '/Users/dominikbornand/Desktop/ETHZ/FS21/3D_Vision/disparity_img/'# path where disparity images are saved
@@ -345,10 +346,19 @@ cv2.destroyAllWindows()
 plt.close('all')
 
 fig = plt.figure()
+
 iterator = 0
+time_now = str(time.asctime( time.localtime(time.time()) ))
+os.mkdir(disparity_path+'/'+time_now)
+
+nFrames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
 
 while(cap.isOpened()):
     ret, frame = cap.read()
+
+    if (iterator >= nFrames):
+        cv2.destroyAllWindows()
+        break
     
     if ret:
         imgR, imgL = get_right_and_left_image(mirror_position, frame)
@@ -373,7 +383,7 @@ while(cap.isOpened()):
         cap.set(1, iterator)
         out.write(np.uint8(img))
 
-        cv2.imwrite(disparity_path+'_{0}.png'.format(iterator), img)
+        cv2.imwrite(disparity_path+'/'+time_now+'/{0}.png'.format(iterator), img)
 
         print('Number of frame: ', iterator, ' iteration step: ', output_step)
         iterator = iterator+output_step
@@ -386,6 +396,7 @@ while(cap.isOpened()):
     # if the `q` key was pressed, break from the loop
     if key == ord("q"):
         break
+
 
 cv2.waitKey(0)
 cap.release()
