@@ -4,9 +4,18 @@ from matplotlib import pyplot as plt
 import glob
 import time
 import matplotlib; matplotlib.use('agg')
+import sys
 # from operator import itemgetter
 
-def mirror_detection(path):
+# variables
+output_step = 50
+mirror_detection_case = 2
+# path = '/Users/dominikbornand/Desktop/ETHZ/FS21/3D_Vision/Catadioptric-Stereo/animation/movie_small.avi'
+path = '/Users/dominikbornand/Desktop/ETHZ/FS21/3D_Vision/Catadioptric-Stereo/animation/animation_2_0.mkv'
+
+
+# functions
+def automatic_mirror_detection(path):
     cap = cv2.VideoCapture(path) 
     #https://opencv-python-tutroals.readthedocs.io/en/latest/py_tutorials/py_gui/py_video_display/py_video_display.html
     #https://docs.opencv.org/3.4/d4/dee/tutorial_optical_flow.html
@@ -29,24 +38,21 @@ def mirror_detection(path):
     # Take first frame and find corners in it
     ret, old_frame = cap.read()
     old_gray = cv2.cvtColor(old_frame, cv2.COLOR_BGR2GRAY)
-
+    frame_size = old_gray.shape # frame size x and y are changed
 
     grid_size = 10
     x = np.zeros((grid_size**2,1,2),np.float32)
     for xx in range(grid_size):
         for yy in range(grid_size):
-            x[(xx*grid_size)+yy][0][0] = (800/grid_size)*(yy+1)
-            x[(xx*grid_size)+yy][0][1] = (500/grid_size)*(xx+1)
+            x[(xx*grid_size)+yy][0][0] = (frame_size[1]/grid_size)*(yy+1)
+            x[(xx*grid_size)+yy][0][1] = (frame_size[0]/grid_size)*(xx+1)
 
     grid_size_2 = 100
-    x_2 = np.zeros((grid_size_2**2,1,2), np.float32)
+    x_2 = np.zeros((grid_size_2,1,2), np.float32)
     for xx in range(grid_size_2):
-            x_2[(xx)][0][0] = (800/grid_size_2)*(xx+1)
-            x_2[(xx)][0][1] = (382)
+            x_2[(xx)][0][0] = (frame_size[1]/grid_size_2)*(xx+1)
+            x_2[(xx)][0][1] = (frame_size[0]/2)
 
-    # p0 = cv2.goodFeaturesToTrack(old_gray, mask = None, **feature_params)
-    # p0 = np.array([[[50.,382.]],[[100.,382.]],[[150.,382.]],[[200.,382.]],[[250.,382.]],[[300.,382.]],[[350.,382.]],[[400.,382.]],
-    #             [[450.,382.]],[[500.,382.]],[[550.,382.]],[[600.,382.]],[[650.,382.]],[[700.,382.]],[[750.,382.]]],np.float32)
     p0 = x_2
 
     # Create a mask image for drawing purposes
@@ -116,13 +122,40 @@ def mirror_detection(path):
             
     mirror_position_x = int((latest_positive_value_x_coordinate + latest_negative_value_x_coordinate)/2)
         
-        
-    print('good_or_not: ',np.array(good_or_not))
-    print('mirror_position_x: ', mirror_position_x)
-    print('latest_positive_value_x_coordinate: ', latest_positive_value_x_coordinate)
-    print('latest_negative_value_x_coordinate: ', latest_negative_value_x_coordinate)
+    print('automatic mirror detection leads to mirror_position_x: ', mirror_position_x)
     
     return mirror_position_x
+
+def manual_mirror_detection(path):
+
+    cap = cv2.VideoCapture(path)
+    ret, frame = cap.read()
+    _img = frame
+
+    params = {'BORDER_OFFSET':-1}
+    def select_border(event, x, y, flags, params):
+        try:
+            if(event == cv2.EVENT_LBUTTONUP) and (params['BORDER_OFFSET'] == -1):
+                params['BORDER_OFFSET'] = x
+            else:
+                print('nothing')
+        except:
+            print('Error occured in manual_mirror_detection.')
+    
+    cv2.namedWindow('select border', cv2.WINDOW_NORMAL)
+    cv2.setMouseCallback('select border', select_border, params)
+    cv2.setWindowProperty('select border', cv2.WINDOW_FULLSCREEN, 1)
+    cv2.imshow('select border', _img)
+
+    while(1): # wait for selection or ESC key    
+        if params['BORDER_OFFSET'] >= 0: 
+            break
+        if cv2.waitKey(20) & 0xFF == 27: 
+            break
+    cv2.destroyAllWindows()
+    print('Offset = ' + str(params['BORDER_OFFSET']))
+    x = params['BORDER_OFFSET']
+    return x
 
 def draw_mirror_line(mirror_position, path):
     cap = cv2.VideoCapture(path)
@@ -283,14 +316,25 @@ def calculate_disparity(rectR , rectL):
 
     return disparity
 
-path = '/Users/dominikbornand/Desktop/ETHZ/FS21/3D_Vision/Catadioptric-Stereo/animation/movie_small.avi'
+# main code
 cap = cv2.VideoCapture(path)
 ret, frame = cap.read()
 frame_gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 print(frame.shape)
 
 # mirror_position = mirror_detection(path)
-mirror_position = 408
+try:
+    if mirror_detection_case == 0:
+        mirror_position = 877
+    elif mirror_detection_case == 1:
+        mirror_position = automatic_mirror_detection(path)
+    elif mirror_detection_case == 2:
+        mirror_position = manual_mirror_detection(path)
+except:
+    print('There is no mirror detection activated!')
+
+
+
 draw_mirror_line(mirror_position, path)
 K = get_intrinsics()
 E, F, pts1, pts2 = calculate_E_F(mirror_position, frame)
@@ -299,7 +343,7 @@ E, F, pts1, pts2 = calculate_E_F(mirror_position, frame)
 size = (frame.shape[0], frame.shape[1])
 print(frame.shape)
 fourcc = cv2.VideoWriter_fourcc('m', 'p', '4', 'v')
-out = cv2.VideoWriter(filename = 'outpy.avi', fourcc = fourcc, fps = 5, frameSize = (540, 399))
+out = cv2.VideoWriter(filename = 'outpy.avi', fourcc = fourcc, fps = 5, frameSize = (480, 640))
 cv2.destroyAllWindows()
 plt.close('all')
 
@@ -326,24 +370,28 @@ while(cap.isOpened()):
 
         # img is rgb, convert to opencv's default bgr
         img = cv2.cvtColor(img,cv2.COLOR_RGB2BGR)
+        print(img.shape)
 
         # display image with opencv or any operation you like
         cv2.imshow('output',img)
         cap.set(1, iterator)
-        # out.write(np.uint8(img))
-        print(iterator)
-        iterator = iterator+5
+        out.write(np.uint8(img))
 
-        # cv2.imshow("plot",img)
+        cv2.imwrite('/Users/dominikbornand/Desktop/ETHZ/FS21/3D_Vision/disparity_img/disparity_{0}.png'.format(iterator), img)
+
+        print('Number of frame: ', iterator)
+        iterator = iterator+output_step
     
     else:
         break
 
     key = cv2.waitKey(1) & 0xFF
+
     # if the `q` key was pressed, break from the loop
     if key == ord("q"):
         break
 
+cv2.waitKey(0)
 cap.release()
 out.release()
 cv2.destroyAllWindows()
