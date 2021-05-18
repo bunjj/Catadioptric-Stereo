@@ -8,6 +8,7 @@ import sys
 import os
 import argparse
 from helper import * #contains all the functions for brevity
+from calibration import calibrateChessboard
 # from operator import itemgetter
 
 text = "This is a program to compute the disparity map and depth estimation of an mirror image."
@@ -89,7 +90,21 @@ except:
 
 
 draw_mirror_line(mirror_position, path, real_output_path)
-K = get_intrinsics() #TODO: add intrinsic computation
+
+# compute intrinsics matrix K from Chessboard
+# TODO: use Rs and ts from mirrored view to compute extrinsics?
+K,_,_ = calibrateChessboard(
+    filepattern = './images/calibration/*.JPG',
+    chess_size=(9,6),
+    tile_size=0.014, # <= 14 mm
+    split_position = mirror_position,
+    partition='left',
+    flip=False,
+    verbose=2,
+    show=False # or what ever you want #TODO: when to show?
+    ) 
+
+
 #TODO: find out what pts1 and pts2 do
 #maybe matches?
 # pts1 and pts2 -> good points (matches) of left and right image. Needed for rectification.
