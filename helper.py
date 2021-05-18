@@ -88,6 +88,8 @@ def automatic_mirror_detection(source_path, gridgrid_size):
         old_gray = frame_gray.copy()
         p0 = good_new.reshape(-1, 1, 2)
 
+
+    # TODO:
     # Assigns 1 and -1 if the point was moving right or left from frame to frame. Afterwards it checks if
     # the point was over the last frames range(iterater_max) moving right or left with a threshold of 0.7.
     # Then it looks for the latest 1 and first -1 in the list. So this code works just if the frame moves towards
@@ -154,15 +156,16 @@ def manual_mirror_detection(source_path, ):
             break
     cv2.destroyAllWindows()
     print('Offset = ' + str(params['BORDER_OFFSET']))
-    x = params['BORDER_OFFSET']
+    x = params['BORDER_OFFSET'] # x = mirror position
     return x
 
 
 def draw_mirror_line(mirror_position, path, real_output_path):
     cap = cv2.VideoCapture(path)
-    # draw black line at x
     ret, frame = cap.read()
 
+
+    # draw black line at x
     x = mirror_position
     frame[:, x, :] = 0
     img = frame
@@ -187,15 +190,17 @@ def draw_mirror_line(mirror_position, path, real_output_path):
 
 
 def get_right_and_left_image(mirror_position, img):
+
     x = mirror_position
-    new_width = x
+
     # flip right image horizontally
     img[:, x + 1:, :] = cv2.flip(img[:, x + 1:, :], 1)
     imgR = cv2.cvtColor(img[:, :x, :], cv2.COLOR_BGR2GRAY)
-    imgL = cv2.cvtColor(img[:, x + 1:x + 1 + new_width, :], cv2.COLOR_BGR2GRAY)
+    imgL = cv2.cvtColor(img[:, x + 1:x + 1 + x, :], cv2.COLOR_BGR2GRAY)
     return imgR, imgL
 
 #TODO: hardcoded intrinsics?;
+#At the moment hard coded intrinsics
 def get_intrinsics():
     K = np.array([[1333.3334, 0.0000, 480.0000],
                   [0.0000, 1333.3334, 270.0000],
@@ -216,6 +221,7 @@ def calculate_E_F(mirror_position, img, real_output_path, K):
 
     key_img = imgL.copy()
 
+    # plots SIFT keypoints and descriptor
     plt.figure(figsize=(15, 15))
     plt.subplot(121), plt.imshow(
         cv2.drawKeypoints(imgL, kp1, key_img, flags=cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS))
@@ -223,11 +229,7 @@ def calculate_E_F(mirror_position, img, real_output_path, K):
         cv2.drawKeypoints(imgR, kp2, key_img, flags=cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS))
     plt.savefig(real_output_path + '/sift_features.png')
 
-    # BFMatcher with default params
-    bf = cv2.BFMatcher()
-    matches = bf.knnMatch(des1, des2, k=2)
-    ########### (https://docs.opencv.org/master/da/de9/tutorial_py_epipolar_geometry.html)
-
+    #TODO: No idea who did this and what it does.
     FLANN_INDEX_KDTREE = 0
     index_params = dict(algorithm=FLANN_INDEX_KDTREE, trees=5)
     search_params = dict(checks=50)
@@ -241,14 +243,14 @@ def calculate_E_F(mirror_position, img, real_output_path, K):
 
     for i, (m, n) in enumerate(matches):
         if m.distance < 0.8 * n.distance:
-            good.append(m)
+            good.append([m])
             pts2.append(kp2[m.trainIdx].pt)
             pts1.append(kp1[m.queryIdx].pt)
 
     pts1 = np.int32(pts1)
     pts2 = np.int32(pts2)
 
-    # F, mask = cv2.findFundamentalMat(pts1, pts2, method=cv2.RANSAC)
+    # method can be changed to RANSAC if wanted.
     F, mask = cv2.findFundamentalMat(pts1, pts2, method=cv2.FM_7POINT)
     print('\nFundamental Matrix: ')
     print(F)
@@ -260,16 +262,10 @@ def calculate_E_F(mirror_position, img, real_output_path, K):
 
     # Essential from Fundamental
     # (https://docs.opencv.org/master/d9/d0c/group__calib3d.html#ga0c86f6478f36d5be6e450751bbf4fec0)
-    # E, mask2 = cv2.findEssentialMat(pts1, pts2, cameraMatrix=K, method=cv2.RANSAC)
+    # method can be changed to RANSAC if wanted.
     E, mask2 = cv2.findEssentialMat(pts1, pts2, cameraMatrix=K, method=cv2.FM_7POINT)
     print('\nEssential Matrix: ')
     print(E)
-
-    # Apply ratio test
-    good = []
-    for m, n in matches:
-        if m.distance < 0.75 * n.distance:
-            good.append([m])
 
     # cv2.drawMatchesKnn expects list of lists as matches.
     img3 = cv2.drawMatchesKnn(imgL, kp1, imgR, kp2, good, flags=2, outImg=None)
@@ -278,6 +274,7 @@ def calculate_E_F(mirror_position, img, real_output_path, K):
     for x in kp1:
         if (x.pt[0] < point[0]):
             point = x.pt
+
     plt.figure(figsize=(15, 15))
     plt.imshow(img3)
     plt.savefig(real_output_path + '/sift_matches.png')
