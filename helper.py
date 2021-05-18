@@ -20,12 +20,6 @@ def automatic_mirror_detection(source_path, gridgrid_size):
     # https://opencv-python-tutroals.readthedocs.io/en/latest/py_tutorials/py_gui/py_video_display/py_video_display.html
     # https://docs.opencv.org/3.4/d4/dee/tutorial_optical_flow.html
 
-    # params for ShiTomasi corner detection
-    feature_params = dict(maxCorners=50,
-                          qualityLevel=0.01,
-                          minDistance=7,
-                          blockSize=5)
-
     # Parameters for lucas kanade optical flow
     lk_params = dict(winSize=(15, 15),
                      maxLevel=4,
@@ -34,7 +28,7 @@ def automatic_mirror_detection(source_path, gridgrid_size):
     # Create some random colors
     color = np.random.randint(0, 255, (100, 3))
 
-    # Take first frame and find corners in it
+    # Take first frame and define point in it on a line (y=const. along x direction)
     ret, old_frame = cap.read()
     old_gray = cv2.cvtColor(old_frame, cv2.COLOR_BGR2GRAY)
     frame_size = old_gray.shape  # frame size x and y are changed
@@ -42,15 +36,16 @@ def automatic_mirror_detection(source_path, gridgrid_size):
     grid_size = gridgrid_size
 
     p0 = np.zeros((grid_size, 1, 2), np.float32)
-    for xx in range(grid_size):
-        p0[(xx)][0][0] = (frame_size[1] / grid_size) * (xx + 1)
-        p0[(xx)][0][1] = (frame_size[0] / 2)
+    for point in range(grid_size):
+        p0[point][0][0] = (frame_size[1] / grid_size) * (point + 1)
+        p0[point][0][1] = (frame_size[0] / 2)
 
     # Create a mask image for drawing purposes
     mask = np.zeros_like(old_frame)
     diff_list = list()
 
-    iterater_max = 20 # number of iteration for optical flow for mirror detection
+    #TODO: can be made dynamic
+    iterater_max = 10 # number of frames for optical flow for mirror detection
     for iteration in range(iterater_max):
         ret, frame = cap.read()
         frame_gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
@@ -58,7 +53,8 @@ def automatic_mirror_detection(source_path, gridgrid_size):
         # calculate optical flow
         p1, st, err = cv2.calcOpticalFlowPyrLK(old_gray, frame_gray, p0, None, **lk_params)
 
-        # Select good points which exist in frame and frame-1
+        # Select good points which exist in frame and frame-1 and saves them in diff_list. Also deletes points which
+        # which was good in older frames but bad at the current frame.
         if p1 is not None:
             good_new = p1[st == 1]
             good_old = p0[st == 1]
@@ -80,6 +76,7 @@ def automatic_mirror_detection(source_path, gridgrid_size):
 
         img = cv2.add(frame, mask)
         cv2.imshow('frame', img)
+
         k = cv2.waitKey(30) & 0xff
         if k == 27:
             break
@@ -89,30 +86,30 @@ def automatic_mirror_detection(source_path, gridgrid_size):
         p0 = good_new.reshape(-1, 1, 2)
 
 
-    # TODO:
+    # TODO: Threshold can be made dynamically
     # Assigns 1 and -1 if the point was moving right or left from frame to frame. Afterwards it checks if
     # the point was over the last frames range(iterater_max) moving right or left with a threshold of 0.7.
     # Then it looks for the latest 1 and first -1 in the list. So this code works just if the frame moves towards
     # the mirror.
-    good_or_not = list()
+    point_movement = list()
     test = 1
-    for first_index in range(diff_list[0].shape[0]):
+    for point in range(diff_list[0].shape[0]):
         sum = 0
-        for index in range(iterater_max):
-            sum = sum + np.sign((diff_list[index])[first_index])
+        for frame_number in range(iterater_max):
+            sum = sum + np.sign((diff_list[frame_number])[point])
 
         if sum >= 0.7 * iterater_max:
-            good_or_not.append(1)
-            latest_positive_value_x_coordinate = p0[first_index][0][0]
+            point_movement.append(1)
+            latest_positive_value_x_coordinate = p0[point][0][0]
         elif sum <= -0.7 * iterater_max:
-            good_or_not.append(-1)
+            point_movement.append(-1)
             while (test):
-                latest_negative_value_x_coordinate = p0[first_index][0][0]
+                first_negative_value_x_coordinate = p0[point][0][0]
                 test = 0
         else:
-            good_or_not.append(0)
+            point_movement.append(0)
 
-    mirror_position_x = int((latest_positive_value_x_coordinate + latest_negative_value_x_coordinate) / 2)
+    mirror_position_x = int((latest_positive_value_x_coordinate + first_negative_value_x_coordinate) / 2)
 
     print('automatic mirror detection leads to mirror_position_x: ', mirror_position_x)
 
@@ -184,13 +181,14 @@ def draw_mirror_line(mirror_position, path, real_output_path):
     imgR = cv2.cvtColor(img[:, :x, :], cv2.COLOR_BGR2GRAY)
     imgL = cv2.cvtColor(img[:, x + 1:x + 1 + new_width, :], cv2.COLOR_BGR2GRAY)
 
+    # saves images
     cv2.imwrite(real_output_path + '/imgL.png', imgL)
     cv2.imwrite(real_output_path + '/imgR.png', imgR)
     cv2.imwrite(real_output_path + '/select_border.png', img)
 
 
 def get_right_and_left_image(mirror_position, img):
-
+    # split original image in right and left image (gray) by given mirror position
     x = mirror_position
 
     # flip right image horizontally
@@ -229,12 +227,13 @@ def calculate_E_F(mirror_position, img, real_output_path, K):
         cv2.drawKeypoints(imgR, kp2, key_img, flags=cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS))
     plt.savefig(real_output_path + '/sift_features.png')
 
-    #TODO: No idea who did this and what it does.
+    # This matcher trains cv::flann::Index on a train descriptor collection and calls its nearest search methods
+    # to find the best matches. So, this matcher may be faster when matching a large train collection than the brute
+    # force matcher.
     FLANN_INDEX_KDTREE = 0
     index_params = dict(algorithm=FLANN_INDEX_KDTREE, trees=5)
     search_params = dict(checks=50)
     flann = cv2.FlannBasedMatcher(index_params, search_params)
-
     matches = flann.knnMatch(des1, des2, k=2)
 
     good = []
@@ -256,7 +255,7 @@ def calculate_E_F(mirror_position, img, real_output_path, K):
     print(F)
     # (https://stackoverflow.com/questions/59014376/what-do-i-do-with-the-fundamental-matrix)
 
-    # We select only inlier points
+    # We select only inlier points, needed for rectification
     pts1 = pts1[mask.ravel() == 1]
     pts2 = pts2[mask.ravel() == 1]
 
@@ -264,7 +263,7 @@ def calculate_E_F(mirror_position, img, real_output_path, K):
     # (https://docs.opencv.org/master/d9/d0c/group__calib3d.html#ga0c86f6478f36d5be6e450751bbf4fec0)
     # method can be changed to RANSAC if wanted.
     E, mask2 = cv2.findEssentialMat(pts1, pts2, cameraMatrix=K, method=cv2.FM_7POINT)
-    print('\nEssential Matrix: ')
+    print('\nEssential vMatrix: ')
     print(E)
 
     # cv2.drawMatchesKnn expects list of lists as matches.
@@ -272,7 +271,7 @@ def calculate_E_F(mirror_position, img, real_output_path, K):
 
     point = kp1[1].pt
     for x in kp1:
-        if (x.pt[0] < point[0]):
+        if x.pt[0] < point[0]:
             point = x.pt
 
     plt.figure(figsize=(15, 15))
@@ -283,6 +282,7 @@ def calculate_E_F(mirror_position, img, real_output_path, K):
 
 
 def rectification(imgR, imgL, pts1, pts2, F):
+    # rectification of left and right image
     info, HL, HR = cv2.stereoRectifyUncalibrated(pts1, pts2, F, imgL.shape)
     rectL = cv2.warpPerspective(imgL, HL, (imgL.shape[1], imgL.shape[0]))
     rectR = cv2.warpPerspective(imgR, HR, (imgR.shape[1], imgR.shape[0]))
@@ -296,7 +296,7 @@ def computeSVD(E):
 
 
 def getRotTrans(E):
-    # singular values decomposition
+    # singular values decomposition to get Rotation and Translation from left to right camera.
     U, S, VT = computeSVD(E)
     W = np.array([
         [0, -1, 0],

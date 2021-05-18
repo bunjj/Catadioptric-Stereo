@@ -38,9 +38,9 @@ parser.add_argument("-l", "--load",
 args = parser.parse_args()
 
 if args.mirror:
-    mirror_detection_case = 1
-else:
     mirror_detection_case = 2
+else:
+    mirror_detection_case = 1
 
 # variables
 output_step = 30
@@ -92,6 +92,7 @@ draw_mirror_line(mirror_position, path, real_output_path)
 K = get_intrinsics() #TODO: add intrinsic computation
 #TODO: find out what pts1 and pts2 do
 #maybe matches?
+# pts1 and pts2 -> good points (matches) of left and right image. Needed for rectification.
 E, F, pts1, pts2 = calculate_E_F(mirror_position, frame, real_output_path, K)
 _ , _ = getRotTrans(E)
 
@@ -121,7 +122,7 @@ while(cap.isOpened()):
 
         # convert canvas to image
         img = np.fromstring(fig.canvas.tostring_rgb(), dtype=np.uint8, sep='')
-        img  = img.reshape(fig.canvas.get_width_height()[::-1] + (3,))
+        img = img.reshape(fig.canvas.get_width_height()[::-1] + (3,))
 
         # img is rgb, convert to opencv's default bgr
         img = cv2.cvtColor(img,cv2.COLOR_RGB2BGR)
