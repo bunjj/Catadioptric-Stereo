@@ -37,10 +37,10 @@ parser.add_argument("-l", "--load",
 
 args = parser.parse_args()
 
-if args.mirror:
-    mirror_detection_case = 2
+if not args.mirror: 
+    mirror_detection_case = 1 # manual mirror detection
 else:
-    mirror_detection_case = 1
+    mirror_detection_case = 2 # automatic mirror detection
 
 # variables
 output_step = 30
@@ -80,9 +80,9 @@ os.mkdir(real_output_path+'/disparity_img')
 #TODO: adjust this code depending on input parameter
 try:
     if mirror_detection_case == 1:
-        mirror_position = automatic_mirror_detection(path, automatic_mirror_detection_grid_size)
-    elif mirror_detection_case == 2:
         mirror_position = manual_mirror_detection(path)
+    elif mirror_detection_case == 2:
+        mirror_position = automatic_mirror_detection(path, automatic_mirror_detection_grid_size)
 except:
     print('There is no mirror detection activated!')
 
