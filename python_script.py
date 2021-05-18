@@ -54,7 +54,7 @@ else:
 if args.target:
     output_path = args.target
 else:
-    output_path = '/Users/dominikbornand/Desktop/ETHZ/FS21/3D_Vision/img/'# path where disparity images are saved
+    output_path = '../img/'# path where disparity images are saved
 
 
 # functions
