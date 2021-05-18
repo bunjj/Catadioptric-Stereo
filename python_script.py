@@ -41,8 +41,9 @@ if args.mirror:
     mirror_detection_case = 1
 else:
     mirror_detection_case = 2
+
 # variables
-output_step = 50
+output_step = 30
 automatic_mirror_detection_grid_size = 100
 
 if args.source:
@@ -53,7 +54,7 @@ else:
 if args.target:
     output_path = args.target
 else:
-    output_path = '../img/'# path where disparity images are saved
+    output_path = '/Users/dominikbornand/Desktop/ETHZ/FS21/3D_Vision/img/'# path where disparity images are saved
 
 
 # functions
@@ -69,7 +70,7 @@ ret, frame = cap.read() #frame: first frame that comes out, #ret: no clue? TODO:
 frame_gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY) #TODO: is gray, but nobody knows why. find out if relevant
 
 time_now = str(time.asctime( time.localtime(time.time()) )) #create output folder depending on time and date
-real_output_path = (output_path+'/'+time_now) #TODO: rename path names, not clean done
+real_output_path = (output_path+time_now) #TODO: rename path names, not clean done
 os.mkdir(real_output_path)
 os.mkdir(real_output_path+'/disparity_img')
 
@@ -94,9 +95,6 @@ K = get_intrinsics() #TODO: add intrinsic computation
 E, F, pts1, pts2 = calculate_E_F(mirror_position, frame, real_output_path, K)
 _ , _ = getRotTrans(E)
 
-size = (frame.shape[0], frame.shape[1])
-fourcc = cv2.VideoWriter_fourcc('m', 'p', '4', 'v') #to directly create a video, but doesn't work
-out = cv2.VideoWriter(filename = 'outpy.avi', fourcc = fourcc, fps = 5, frameSize = (480, 640))
 
 #closes all windows
 cv2.destroyAllWindows()
@@ -106,26 +104,16 @@ fig = plt.figure()
 
 iterator = 0
 
-nFrames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT)) # dead code
-
 print('\n\n\nStart of img reading of mov clip and building of disparity map.\n')
 while(cap.isOpened()):
     ret, frame = cap.read()
 
-    # not working properly
-    #also dead code
-    """ 
-    if (iterator >= nFrames):
-        cv2.destroyAllWindows()
-        break 
-    """
-    
     if ret:
         imgR, imgL = get_right_and_left_image(mirror_position, frame)
         rectR , rectL = rectification(imgR, imgL, pts1, pts2, F)
         disparity = calculate_disparity(rectR, rectL)
         
-        fig.canvas.draw() #to be able to save the figure
+        fig.canvas.draw() # to be able to save the figure
         plt.imshow(disparity)
 
         # redraw the canvas
@@ -141,7 +129,6 @@ while(cap.isOpened()):
         # display image with opencv or any operation you like
         cv2.imshow('output',img)
         cap.set(1, iterator)
-        out.write(np.uint8(img))
 
         cv2.imwrite(output_path+'/'+time_now+'/disparity_img/{0}.png'.format(iterator), img)
 
@@ -158,11 +145,7 @@ while(cap.isOpened()):
     if key == ord("q"):
         break
 
-
-cv2.waitKey(0)
 cap.release()
-out.release()
 cv2.destroyAllWindows()
 print('script has ended.')
-sys.exit() #deadcode
 

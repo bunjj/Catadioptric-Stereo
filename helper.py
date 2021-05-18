@@ -41,30 +41,16 @@ def automatic_mirror_detection(source_path, gridgrid_size):
 
     grid_size = gridgrid_size
 
-
-    #the whole block might be deadcode
-    x = np.zeros((grid_size ** 2, 1, 2), np.float32)
+    p0 = np.zeros((grid_size, 1, 2), np.float32)
     for xx in range(grid_size):
-        for yy in range(grid_size): #deadcode
-            x[(xx * grid_size) + yy][0][0] = (frame_size[1] / grid_size) * (yy + 1)
-            x[(xx * grid_size) + yy][0][1] = (frame_size[0] / grid_size) * (xx + 1)
-
-    grid_size_2 = grid_size
-    x_2 = np.zeros((grid_size_2, 1, 2), np.float32)
-    for xx in range(grid_size_2):
-        x_2[(xx)][0][0] = (frame_size[1] / grid_size_2) * (xx + 1)
-        x_2[(xx)][0][1] = (frame_size[0] / 2)
-
-    p0 = x_2
+        p0[(xx)][0][0] = (frame_size[1] / grid_size) * (xx + 1)
+        p0[(xx)][0][1] = (frame_size[0] / 2)
 
     # Create a mask image for drawing purposes
     mask = np.zeros_like(old_frame)
-    # diff = np.zeros([15,1])
     diff_list = list()
-    good = np.zeros([15, 1])
 
-    # while(1):
-    iterater_max = 20
+    iterater_max = 20 # number of iteration for optical flow for mirror detection
     for iteration in range(iterater_max):
         ret, frame = cap.read()
         frame_gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
@@ -72,18 +58,18 @@ def automatic_mirror_detection(source_path, gridgrid_size):
         # calculate optical flow
         p1, st, err = cv2.calcOpticalFlowPyrLK(old_gray, frame_gray, p0, None, **lk_params)
 
-        # Select good points
+        # Select good points which exist in frame and frame-1
         if p1 is not None:
             good_new = p1[st == 1]
             good_old = p0[st == 1]
             diff = p1[:, :, 0] - p0[:, :, 0]
             diff_list.append(diff)
 
-            for xx in range(len(diff_list)):
-                a = (diff_list[xx])[st == 1]
+            for k in range(len(diff_list)):
+                a = (diff_list[k])[st == 1]
                 index_value = a.shape[0]
                 a = a.reshape((index_value, 1))
-                diff_list[xx] = a
+                diff_list[k] = a
 
         # draw the tracks
         for i, (new, old) in enumerate(zip(good_new, good_old)):
@@ -102,6 +88,10 @@ def automatic_mirror_detection(source_path, gridgrid_size):
         old_gray = frame_gray.copy()
         p0 = good_new.reshape(-1, 1, 2)
 
+    # Assigns 1 and -1 if the point was moving right or left from frame to frame. Afterwards it checks if
+    # the point was over the last frames range(iterater_max) moving right or left with a threshold of 0.7.
+    # Then it looks for the latest 1 and first -1 in the list. So this code works just if the frame moves towards
+    # the mirror.
     good_or_not = list()
     test = 1
     for first_index in range(diff_list[0].shape[0]):
