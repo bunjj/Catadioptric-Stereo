@@ -65,21 +65,21 @@ else:
 # main code
 #capture: loads first frame, captures one frame after another in a file, somewhat of an iterator
 
+# Grabs, decodes and returns the next video frame.
+# Parameters: [out]	image	the video frame is returned here. If no frames has been grabbed the image will be empty.
+# Returns: false if no frames has been grabbed
 cap = cv2.VideoCapture(path)
-ret, frame = cap.read() #frame: first frame that comes out, #ret: no clue? TODO: find out
+ret, frame = cap.read() #frame: first frame that comes out, #ret: no clue? TODO: find out. See comment above
 frame_gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY) #TODO: is gray, but nobody knows why. find out if relevant
 
 time_now = str(time.asctime( time.localtime(time.time()) )) #create output folder depending on time and date
-real_output_path = (output_path+time_now) #TODO: rename path names, not clean done
+real_output_path = (output_path+time_now) #TODO: rename path names, not clean done. Is used in different helper functions
 os.mkdir(real_output_path)
 os.mkdir(real_output_path+'/disparity_img')
 
-# mirror_position = mirror_detection(path)
 #TODO: adjust this code depending on input parameter
 try:
-    if mirror_detection_case == 0:
-        mirror_position = 877
-    elif mirror_detection_case == 1:
+    if mirror_detection_case == 1:
         mirror_position = automatic_mirror_detection(path, automatic_mirror_detection_grid_size)
     elif mirror_detection_case == 2:
         mirror_position = manual_mirror_detection(path)
@@ -94,6 +94,8 @@ K = get_intrinsics() #TODO: add intrinsic computation
 #maybe matches?
 # pts1 and pts2 -> good points (matches) of left and right image. Needed for rectification.
 E, F, pts1, pts2 = calculate_E_F(mirror_position, frame, real_output_path, K)
+
+# Prints Rotation and Translation from left to right camera
 _ , _ = getRotTrans(E)
 
 
@@ -101,8 +103,8 @@ _ , _ = getRotTrans(E)
 cv2.destroyAllWindows()
 plt.close('all')
 
-fig = plt.figure()
 
+fig = plt.figure()
 iterator = 0
 
 print('\n\n\nStart of img reading of mov clip and building of disparity map.\n')
@@ -118,6 +120,7 @@ while(cap.isOpened()):
         plt.imshow(disparity)
 
         # redraw the canvas
+        # https://stackoverflow.com/questions/7821518/matplotlib-save-plot-to-numpy-array
         fig.canvas.draw()
 
         # convert canvas to image
