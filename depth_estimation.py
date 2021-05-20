@@ -6,7 +6,9 @@ from utils import *
 
 
 def calculate_E_F(mirror_position, img, real_output_path, K):
-    imgR, imgL = get_right_and_left_image(mirror_position, img)
+    imgL, imgR = split_image(img, mirror_position, 'left')
+    imgL = cv2.cvtColor(imgL, cv2.COLOR_BGR2GRAY)
+    imgR = cv2.cvtColor(imgR, cv2.COLOR_BGR2GRAY)
 
     # Initiate SIFT detector
     print('SIFT_detector is called: ')
@@ -82,6 +84,7 @@ def calculate_E_F(mirror_position, img, real_output_path, K):
 
 def rectification(imgR, imgL, pts1, pts2, F):
     # rectification of left and right image
+    # TODO: we know the calibration matrix?
     info, HL, HR = cv2.stereoRectifyUncalibrated(pts1, pts2, F, imgL.shape)
     rectL = cv2.warpPerspective(imgL, HL, (imgL.shape[1], imgL.shape[0]))
     rectR = cv2.warpPerspective(imgR, HR, (imgR.shape[1], imgR.shape[0]))

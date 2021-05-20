@@ -2,6 +2,8 @@ import numpy as np
 import cv2
 from matplotlib import pyplot as plt
 import matplotlib; matplotlib.use('agg')
+from utils import *
+
 
 #TODO: what is the input needed for?
 def manual_mirror_detection(source_path, ):
@@ -154,29 +156,16 @@ def automatic_mirror_detection(source_path, gridgrid_size):
     return mirror_position_x
 
 
-def draw_mirror_line(mirror_position, path, real_output_path):
+
+def draw_mirror_line(x_split, path, real_output_path):
     cap = cv2.VideoCapture(path)
-    ret, frame = cap.read()
+    ret, img = cap.read()
 
+    imgL, imgR = split_image(img, x_split, 'left', show=False)
 
-    # draw black line at x
-    x = mirror_position
-    frame[:, x, :] = 0
-    img = frame
-
-    # flip right image horizontally
-    img[:, x + 1:, :] = cv2.flip(img[:, x + 1:, :], 1)
-
-    # determine width of stereo images
-    new_width = x  # min(x, width-x)
-
-    # draw line of right image with new width
-    img[:, x + 1 + new_width, :] = 0
-
-    # crop images and make grayscale
-    # why it's necessary to crop the image ??
-    imgR = cv2.cvtColor(img[:, :x, :], cv2.COLOR_BGR2GRAY)
-    imgL = cv2.cvtColor(img[:, x + 1:x + 1 + new_width, :], cv2.COLOR_BGR2GRAY)
+    imgL = cv2.cvtColor(imgL, cv2.COLOR_BGR2GRAY)
+    imgR = cv2.cvtColor(imgR, cv2.COLOR_BGR2GRAY)
+    print(imgR.shape, imgL.shape)
 
     # saves images
     cv2.imwrite(real_output_path + '/imgL.png', imgL)

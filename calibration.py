@@ -142,7 +142,7 @@ def calibrateChessboard(
     if verbose >=1: print(f'number of valid views: {n_valid_views}')
 
     if n_valid_views == 0:
-        raise ValueError('Could not detect any chessboard key points')
+        raise RuntimeError('Could not detect any chessboard key points')
 
     # compute camera calibration
     K_init = None # inital intrinsics matrix 
