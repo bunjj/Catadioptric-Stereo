@@ -1,38 +1,7 @@
 import numpy as np
 import cv2
 import glob
-
-def getDownSampledImg(scale, img, verbose=0, show=False):
-    """
-    Down sampling image (for faster further processing)
-    usage of cv2.resize :
-    https://docs.opencv.org/master/da/d54/group__imgproc__transform.html#ga47a974309e9102f5f08231edc7e7529d
-    
-    Image downsampling function
-    
-    :param percent: scale by which axis will be downsampled
-    :param img: image input
-    :param seeImage: if cv2.imshow to see result
-    :type percent: int
-    :type img: numpy.ndarray
-    :type seeImage: bool
-    :return: downsampled image
-    :rtype: numpy.ndarray
-    """
-    width  = int(img.shape[1] * scale)
-    height = int(img.shape[0] * scale)
-    dim = (width, height)
-    resized = cv2.resize(img, dim, interpolation = cv2.INTER_AREA)
-    
-    if verbose: print('Resized Dimensions : ',resized.shape)
-
-    if show:
-        cv2.imshow("Resized image", resized)
-        cv2.waitKey(0)
-        cv2.destroyAllWindows()
-        
-    return resized
-
+from utils import getDownSampledImg
 
 '''
 Useful parameters for this function might be

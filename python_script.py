@@ -7,12 +7,14 @@ import matplotlib; matplotlib.use('agg')
 import sys
 import os
 import argparse
-from helper import * #contains all the functions for brevity
+from utils import * #contains all the functions for brevity
+from mirror_detection import manual_mirror_detection, automatic_mirror_detection, draw_mirror_line
+from depth_estimation import calculate_E_F, rectification, calculate_disparity
 from calibration import calibrateChessboard
 # from operator import itemgetter
 
 text = "This is a program to compute the disparity map and depth estimation of an mirror image."
-parser = argparse.ArgumentParser(description= text)
+parser = argparse.ArgumentParser(description=text)
 
 #add argument for source file
 parser.add_argument("-s", "--source", help = "input file to apply depth estimation on")
@@ -102,7 +104,7 @@ K,_,_ = calibrateChessboard(
     flip=False,
     verbose=2,
     show=False # or what ever you want #TODO: when to show?
-    ) 
+    )
 
 
 #TODO: find out what pts1 and pts2 do
