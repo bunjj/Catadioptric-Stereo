@@ -89,46 +89,44 @@ print('\n\n\nStart of img reading of mov clip and building of disparity map.\n')
 while(cap.isOpened()):
     ret, frame = cap.read()
 
-    if ret:
-        imgR, imgL = split_image(frame, mirror_position, 'left')
-        imgL = cv2.cvtColor(imgL, cv2.COLOR_BGR2GRAY)
-        imgR = cv2.cvtColor(imgR, cv2.COLOR_BGR2GRAY)
-
-        rectR , rectL = rectification(imgR, imgL, pts1, pts2, F)
-        disparity = calculate_disparity(rectR, rectL)
-        
-        fig.canvas.draw() # to be able to save the figure
-        plt.imshow(disparity)
-
-        # redraw the canvas
-        # https://stackoverflow.com/questions/7821518/matplotlib-save-plot-to-numpy-array
-        fig.canvas.draw()
-
-        # convert canvas to image
-        img = np.fromstring(fig.canvas.tostring_rgb(), dtype=np.uint8, sep='')
-        img = img.reshape(fig.canvas.get_width_height()[::-1] + (3,))
-
-        # img is rgb, convert to opencv's default bgr
-        img = cv2.cvtColor(img,cv2.COLOR_RGB2BGR)
-
-        # display image with opencv or any operation you like
-        cv2.imshow('output',img)
-        cap.set(1, iterator)
-
-        cv2.imwrite(temp_path + 'disparity_img/{0}.png'.format(iterator), img)
-
-        print('Number of frame: ', iterator, ' iteration step: ', output_step)
-        iterator = iterator+output_step
-    
-    else:
+    if not ret: # only continue if sucessful
         break
 
-    key = cv2.waitKey(1) & 0xFF #TODO: find out what this does, might be the reason why one has to press q
+    imgR, imgL = split_image(frame, mirror_position, 'left')
+    imgL = cv2.cvtColor(imgL, cv2.COLOR_BGR2GRAY)
+    imgR = cv2.cvtColor(imgR, cv2.COLOR_BGR2GRAY)
 
+    rectR , rectL = rectification(imgR, imgL, pts1, pts2, F)
+    disparity = calculate_disparity(rectR, rectL)
+    
+    fig.canvas.draw() # to be able to save the figure
+    plt.imshow(disparity)
+
+    # redraw the canvas
+    # https://stackoverflow.com/questions/7821518/matplotlib-save-plot-to-numpy-array
+    fig.canvas.draw()
+
+    # convert canvas to image
+    img = np.fromstring(fig.canvas.tostring_rgb(), dtype=np.uint8, sep='')
+    img = img.reshape(fig.canvas.get_width_height()[::-1] + (3,))
+
+    # img is rgb, convert to opencv's default bgr
+    img = cv2.cvtColor(img,cv2.COLOR_RGB2BGR)
+
+    # display image with opencv or any operation you like
+    cv2.imshow('output',img)
+    cap.set(1, iterator)
+
+    cv2.imwrite(temp_path + '/disparity_img/{0}.png'.format(iterator), img)
+
+    print('Number of frame: ', iterator, ' iteration step: ', output_step)
+    iterator = iterator+output_step
 
     # if the `q` key was pressed, break from the loop
+    key = cv2.waitKey(1) & 0xFF #necessary on 64-bit machines
     if key == ord("q"):
         break
+
 
 cap.release()
 cv2.destroyAllWindows()

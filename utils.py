@@ -68,12 +68,13 @@ def getDownSampledImg(scale, img, verbose=0, show=False):
     
     Image downsampling function
     
-    :param percent: scale by which axis will be downsampled
-    :param img: image input
-    :param seeImage: if cv2.imshow to see result
-    :type percent: int
+    :param scale: scale of downsampling \in (0,1]
+    :param img: input image
+    :param verbose: verbosity (0,1,2) for standard output
+    :param show: show intermediate results with cv2.imshow()
+    :type scale: float
     :type img: numpy.ndarray
-    :type seeImage: bool
+    :type show: bool
     :return: downsampled image
     :rtype: numpy.ndarray
     """
@@ -82,7 +83,7 @@ def getDownSampledImg(scale, img, verbose=0, show=False):
     dim = (width, height)
     resized = cv2.resize(img, dim, interpolation = cv2.INTER_AREA)
     
-    if verbose: print('Resized Dimensions : ', resized.shape)
+    if verbose >=2: print('Resized Dimensions : ', resized.shape)
 
     if show:
         cv2.imshow("Resized image", resized)
@@ -90,16 +91,6 @@ def getDownSampledImg(scale, img, verbose=0, show=False):
         cv2.destroyAllWindows()
         
     return resized
-
-def get_right_and_left_image(mirror_position, img):
-    # split original image in right and left image (gray) by given mirror position
-    x = mirror_position
-
-    # flip right image horizontally
-    img[:, x + 1:, :] = cv2.flip(img[:, x + 1:, :], 1)
-    imgR = cv2.cvtColor(img[:, :x, :], cv2.COLOR_BGR2GRAY)
-    imgL = cv2.cvtColor(img[:, x + 1:x + 1 + x, :], cv2.COLOR_BGR2GRAY)
-    return imgR, imgL
 
 def computeSVD(E):
     SD, U, VT = cv2.SVDecomp(E)
@@ -136,4 +127,5 @@ def make_temp_dir(parent='temp'):
     time_now = time.strftime('%Y-%m-%d--%H-%M-%S')
     temp_path = os.path.join(parent, time_now)
     Path(temp_path).mkdir(parents=True, exist_ok=True)
+    Path(temp_path+'/disparity_img').mkdir(parents=True, exist_ok=True)
     return temp_path

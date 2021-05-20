@@ -115,26 +115,27 @@ def calibrateChessboard(
         flags = None
         ret, points_pix = cv2.findChessboardCorners(view_gray, (width, height), flags)
 
-        if ret: # only continue if sucessfull
+        if not ret: # only continue if sucessful
+            break 
 
-            # potentially upsample
-            points_pix = points_pix/scale
+        # potentially upsample
+        points_pix = points_pix/scale
 
-            # refine corner locations iteratively with termination criteria
-            # https://docs.opencv.org/master/dd/d92/tutorial_corner_subpixels.html
-            winSize = (11, 11)
-            zeroZone = (-1, -1)
-            term_criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001)
-            points_pix = cv2.cornerSubPix(view_gray, points_pix, winSize, zeroZone, term_criteria)
-            
-            # append the points from current view to list
-            list_points_obj.append(points_obj)
-            list_points_pix.append(points_pix)
+        # refine corner locations iteratively with termination criteria
+        # https://docs.opencv.org/master/dd/d92/tutorial_corner_subpixels.html
+        winSize = (11, 11)
+        zeroZone = (-1, -1)
+        term_criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001)
+        points_pix = cv2.cornerSubPix(view_gray, points_pix, winSize, zeroZone, term_criteria)
+        
+        # append the points from current view to list
+        list_points_obj.append(points_obj)
+        list_points_pix.append(points_pix)
 
-            if show: # Draw corners and and display the corners
-                view = cv2.drawChessboardCorners(view, (width, height), points_pix, ret)
-                cv2.imshow('Detected Chessboard Pattern', view)
-                cv2.waitKey(0)
+        if show: # Draw corners and and display the corners
+            view = cv2.drawChessboardCorners(view, (width, height), points_pix, ret)
+            cv2.imshow('Detected Chessboard Pattern', view)
+            cv2.waitKey(0)
 
     if show: cv2.destroyAllWindows()
 
