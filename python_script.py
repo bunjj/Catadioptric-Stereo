@@ -6,92 +6,124 @@ import matplotlib; matplotlib.use('agg')
 
 from intrinsics import calibrateChessboard
 from segmentation import manual_split, lk_segmentation
-from extrinsics import calculate_E_F, rectification, calculate_disparity
+from extrinsics import calculate_E_F, rectification
 from utils import * # contains utility functions
-
-# segmentation
-# intrinsics
-# extrinsics
-# stereo
-
 from parser import make_parser
-# from operator import itemgetter
+
+###############################################################################
+# Setup Parameters and Parse Arguments
+###############################################################################
 
 args = make_parser().parse_args()
 
-opticalflow_path = 'data/blender/animation_2_0.mkv'
-calibration_path = 'data/real/calibration/*.JPG'
-
-input_path = 'data/real/calibration/IMG_2373.JPG'
-
-output_path = 'disparity.png'
+opticalflow_path = 'data/blender/optical_flow.avi'
+intrinsics_path = 'data/real/calibration/*.JPG'
 temp_path = make_temp_dir('temp')
 
-# variables
-output_step = 30
+input_path = 'data/blender/blender_chessboard.png'
+output_path = 'disparity.png'
 
+# parameters for intrinsics calibration
+intrinsics_params = dict(        
+    chess_size=(9,6),
+    tile_size=0.014, # <= 14 mm
+    partition='left',
+    flip=False,
+    verbose=1,
+    show=False)
 
+# parameters for lukas kanade calibration
+lk_segmentation_params = dict(
+    grid_size=100,
+    verbose=1,
+    show=False)
 
-# main code
+###############################################################################
+# Intrinsics Calibration
+###############################################################################
 
-#TODO: adjust this code depending on input parameter
+if args.intrinsic:
+    
+    # get mirror segmentation once for all intrinsics images
+    mirror_seg_intr = manual_split(FrameIterator(intrinsics_path).first())
 
-input_image = FrameIterator(input_path).first()
+    # compute intrinsics matrix K from Chessboard 
+    K = calibrateChessboard(
+        filepattern=intrinsics_path,
+        split_position=mirror_seg_intr,
+        **intrinsics_params)
+
+else: K=None
+
+###############################################################################
+# Image Segmentation: Detect the mirror 
+###############################################################################
 
 if args.mirror:
-    mirror_position = lk_segmentation(opticalflow_path, 100)
-else:
-    mirror_position = manual_split(input_image, verbose=1)
 
-
-draw_mirror_line(mirror_position, input_path, temp_path)
-
-# compute intrinsics matrix K from Chessboard
-# TODO: use Rs and ts from mirrored view to compute extrinsics?
-if args.inrinsic:
-    K,_,_ = calibrateChessboard(
-        filepattern = calibration_path,
-        chess_size=(7,7),
-        tile_size=0.2, # <= 14 mm
-        split_position=mirror_position,
-        partition='left',
-        flip=False,
-        verbose=2,
-        show=False # or what ever you want #TODO: when to show?
+    # compute split with Lukas-Kanade optical flow
+    mirror_segmentation = lk_segmentation(
+        path=opticalflow_path,
+        **lk_segmentation_params
         )
-else:
+
+else: mirror_segmentation=None
+
+
+###############################################################################
+#  Depth Estimation on input image
+###############################################################################
+
+# load input image
+img = FrameIterator(input_path).first()
+print(f'img.shape={img.shape}')
+
+
+# fill missing values with defaults
+if K is None:
     K = get_intrinsics()
+if mirror_segmentation is None:
+    mirror_segmentation = manual_split(img, verbose=1)
+print('here')
 
 
-#capture: loads first frame, captures one frame after another in a file, somewhat of an iterator
-# Grabs, decodes and returns the next video frame.
-# Parameters: [out]	image	the video frame is returned here. If no frames has been grabbed the image will be empty.
-# Returns: false if no frames has been grabbed
-cap = cv2.VideoCapture(input_path)
-ret, frame = cap.read() #frame: first frame that comes out, #ret: no clue? TODO: find out. See comment above
-frame_gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY) #TODO: is gray, but nobody knows why. find out if relevant
+# split and flip image according to mirror position into stereo pair
+imgL, imgR = split_image(img, mirror_segmentation, flip='left', show=False)
+
+# calculate essential and fundamental matrices as well as the SIFT keypoints
+E, F, pts1, pts2 = calculate_E_F(imgL, imgR, K, temp_path)
+
+# compute rectified stereo pair
+rectR , rectL = rectification(imgL, imgR, pts1, pts2, F)
+
+# compute disparity using semi-global matching
+stereo = cv2.StereoSGBM_create(minDisparity=-20, numDisparities=50, blockSize=18, speckleRange=50,
+                                speckleWindowSize=30, uniquenessRatio=9)
+disparity = stereo.compute(rectL, rectR)
+
+# get the translation and estimate depth
+_, t = getRotTrans(E)
+distance = np.linalg.norm(t)
+x_focal = K[0,0]
+
+print(distance, x_focal)
+# comput depth
+depth = distance * x_focal / disparity
+print(f'shape={depth.shape}')
+
+###############################################################################
+#  Plot Estimated Depth Map
+###############################################################################
+
+plt.figure(figsize=(15, 15))
+plt.imshow(disparity)
+plt.colorbar()
+plt.savefig(output_path)
 
 
-#TODO: find out what pts1 and pts2 do
-#maybe matches?
-# pts1 and pts2 -> good points (matches) of left and right image. Needed for rectification.
-E, F, pts1, pts2 = calculate_E_F(mirror_position, frame, temp_path, K)
-
-# Prints Rotation and Translation from left to right camera
-_ , _ = getRotTrans(E)
-
-
-#closes all windows
-cv2.destroyAllWindows()
-plt.close('all')
-
-
-fig = plt.figure()
-iterator = 0
-
-
-
-
+###############################################################################
+#  Code for Estimation on Multiple Frames
+###############################################################################
 
 # print('\n\n\nStart of img reading of mov clip and building of disparity map.\n')
 # while(cap.isOpened()):

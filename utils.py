@@ -18,7 +18,9 @@ def split_image(img, x_split, flip, show=False):
     :return: left and right image
     :rtype: tuple
     """
-    if show: cv2.namedWindow('Image Split', cv2.WINDOW_NORMAL)
+    if show: 
+        window_name = 'Split Image into Stereo Pair'
+        cv2.namedWindow(window_name, cv2.WINDOW_NORMAL)
 
     height, width, _ = img.shape
     widthL = x_split
@@ -31,7 +33,7 @@ def split_image(img, x_split, flip, show=False):
     if show: # draw splitted images
         line = np.zeros((height, 2, 3), dtype=np.uint8)
         canvas = np.concatenate([imgL, line, imgR], axis=1)
-        cv2.imshow('Image Split', canvas)
+        cv2.imshow(window_name, canvas)
         cv2.waitKey(0)
 
     # crop images from center
@@ -42,7 +44,7 @@ def split_image(img, x_split, flip, show=False):
     if show: # draw cropped images
         line = np.zeros((height, 2, 3), dtype=np.uint8)
         canvas = np.concatenate([imgL, line, imgR], axis=1)
-        cv2.imshow('Image Split', canvas)
+        cv2.imshow(window_name, canvas)
         cv2.waitKey(0)
 
     # flip left or right image horizontally
@@ -54,10 +56,10 @@ def split_image(img, x_split, flip, show=False):
     if show: # draw flipped image
         line = np.zeros((height, 2, 3), dtype=np.uint8)
         canvas = np.concatenate([imgL, line, imgR], axis=1)
-        cv2.imshow('Image Split', canvas)
+        cv2.imshow(window_name, canvas)
         cv2.waitKey(0)
 
-    if show: cv2.destroyWindow('Image Split')
+    if show: cv2.destroyWindow(window_name)
     return imgL, imgR
 
 def getDownSampledImg(scale, img, verbose=0, show=False):
@@ -139,7 +141,6 @@ def make_temp_dir(parent='temp'):
     time_now = time.strftime('%Y-%m-%d--%H-%M-%S')
     temp_path = os.path.join(parent, time_now)
     Path(temp_path).mkdir(parents=True, exist_ok=True)
-    Path(temp_path+'/disparity_img').mkdir(parents=True, exist_ok=True)
     return temp_path
 
 

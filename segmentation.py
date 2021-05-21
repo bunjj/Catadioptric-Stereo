@@ -1,7 +1,6 @@
 import numpy as np
 import cv2
 from matplotlib import pyplot as plt
-import sys
 import matplotlib; matplotlib.use('agg')
 from utils import *
 
@@ -157,7 +156,7 @@ def lk_segmentation(path, grid_size, verbose=0, show=False):
 
     mirror_position_x = int((latest_positive_value_x_coordinate + first_negative_value_x_coordinate) / 2)
 
-    if verbose >= 1: print(f'automatic mirror detection leads to mirror_position_x: {mirror_position_x}')
+    if verbose >= 1: print(f'automatically detected mirror position: {mirror_position_x}')
 
     return mirror_position_x
 

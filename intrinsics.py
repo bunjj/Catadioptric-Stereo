@@ -57,7 +57,9 @@ def calibrateChessboard(
 
     frame_iter = FrameIterator(filepattern, verbose-1)
 
-    if show: cv2.namedWindow('Detected Chessboard Pattern', cv2.WINDOW_NORMAL)
+    if show: 
+        window_name = 'Detected Chessboard Pattern'
+        cv2.namedWindow(window_name, cv2.WINDOW_NORMAL)
 
     # prepare key points in object coordinates, i.e. chessboard corners
     points_obj = np.zeros((height*width, 3), np.float32)
@@ -116,10 +118,10 @@ def calibrateChessboard(
 
         if show: # Draw corners and and display the corners
             view = cv2.drawChessboardCorners(view, (width, height), points_pix, ret)
-            cv2.imshow('Detected Chessboard Pattern', view)
+            cv2.imshow(window_name, view)
             cv2.waitKey(0)
 
-    if show: cv2.destroyAllWindows()
+    if show: cv2.destroyWindow(window_name)
 
     n_valid_views = len(list_points_pix)
     if verbose >=1: print(f'number of valid views: {n_valid_views}')
@@ -141,4 +143,4 @@ def calibrateChessboard(
         print(f'root mean squared error: {rmse}')
         print(f'intrinsics matrix K:\n{K_res}')
 
-    return (K_res, Rs, ts)
+    return K_res #, Rs, ts)

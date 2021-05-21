@@ -5,8 +5,18 @@ import matplotlib; matplotlib.use('agg')
 from utils import *
 
 
-def calculate_E_F(mirror_position, img, real_output_path, K):
-    imgL, imgR = split_image(img, mirror_position, 'left')
+def calculate_E_F(imgL, imgR, K, temp_path):
+    '''
+    Compute SIFT features on imgL and imgR
+    and determine the Essential and Fundamental Matrices.
+
+    :param np.ndarray imgL: BGR image of left view
+    :param np.ndarray imgR: BGR image of right view
+    :param np.ndarray K: intrinsics matrix K
+    :return: tuple of Essential&Fundamental Matrix and SIFT Key-Point
+    '''
+
+    # transform left and right frames to grayscale
     imgL = cv2.cvtColor(imgL, cv2.COLOR_BGR2GRAY)
     imgR = cv2.cvtColor(imgR, cv2.COLOR_BGR2GRAY)
 
@@ -26,7 +36,7 @@ def calculate_E_F(mirror_position, img, real_output_path, K):
         cv2.drawKeypoints(imgL, kp1, key_img, flags=cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS))
     plt.subplot(122), plt.imshow(
         cv2.drawKeypoints(imgR, kp2, key_img, flags=cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS))
-    plt.savefig(real_output_path + '/sift_features.png')
+    plt.savefig(os.path.join(temp_path, 'sift_features.png'))
 
     # This matcher trains cv::flann::Index on a train descriptor collection and calls its nearest search methods
     # to find the best matches. So, this matcher may be faster when matching a large train collection than the brute
@@ -77,24 +87,28 @@ def calculate_E_F(mirror_position, img, real_output_path, K):
 
     plt.figure(figsize=(15, 15))
     plt.imshow(img3)
-    plt.savefig(real_output_path + '/sift_matches.png')
+    plt.savefig(os.path.join(temp_path, 'sift_matches.png'))
+    plt.close('all')
 
     return E, F, pts1, pts2
 
 
-def rectification(imgR, imgL, pts1, pts2, F):
-    # rectification of left and right image
-    # TODO: we know the calibration matrix?
+def rectification(imgL, imgR, pts1, pts2, F):
+    ''' 
+    Recftify left and right images, given some keypoints and the
+    Fundamental matrix
+    
+    :param np.ndarray imgL: BGR image of left view
+    :param np.ndarray imgR: BGR image of right view
+    :param np.ndarray imgR: keypoints in left image
+    :param np.ndarray imgR: keypoint in right image
+    '''
+    # transform left and right frames to grayscale
+    imgL = cv2.cvtColor(imgL, cv2.COLOR_BGR2GRAY)
+    imgR = cv2.cvtColor(imgR, cv2.COLOR_BGR2GRAY)
+    
+    # TODO: why *UN*calibrated?
     info, HL, HR = cv2.stereoRectifyUncalibrated(pts1, pts2, F, imgL.shape)
     rectL = cv2.warpPerspective(imgL, HL, (imgL.shape[1], imgL.shape[0]))
     rectR = cv2.warpPerspective(imgR, HR, (imgR.shape[1], imgR.shape[0]))
     return rectR, rectL
-
-
-
-def calculate_disparity(rectR, rectL):
-    stereo = cv2.StereoSGBM_create(minDisparity=-20, numDisparities=50, blockSize=18, speckleRange=50,
-                                   speckleWindowSize=30, uniquenessRatio=9)
-    disparity = stereo.compute(rectL, rectR)
-
-    return disparity
