@@ -21,7 +21,7 @@ intrinsics_path = 'data/real/calibration/*.JPG'
 temp_path = make_temp_dir('temp')
 
 input_path = 'data/blender/blender_chessboard.png'
-output_path = 'disparity.png'
+output_path = temp_path + '/depth.png'
 
 # parameters for intrinsics calibration
 intrinsics_params = dict(        
@@ -101,15 +101,13 @@ stereo = cv2.StereoSGBM_create(minDisparity=-20, numDisparities=50, blockSize=18
                                 speckleWindowSize=30, uniquenessRatio=9)
 disparity = stereo.compute(rectL, rectR)
 
-# get the translation and estimate depth
+# get the translation and estimate horizontal focal length
 _, t = getRotTrans(E)
 distance = np.linalg.norm(t)
 x_focal = K[0,0]
 
-print(distance, x_focal)
-# comput depth
+# computedepth
 depth = distance * x_focal / disparity
-print(f'shape={depth.shape}')
 
 ###############################################################################
 #  Plot Estimated Depth Map
