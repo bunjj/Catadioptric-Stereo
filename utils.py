@@ -93,11 +93,23 @@ def getDownSampledImg(scale, img, verbose=0, show=False):
     return resized
 
 def computeSVD(E):
+    ''' Computes the Singular value decomposition of the essential matrix E
+
+    :param numpy.ndarray E: Essential matrix
+    :return: SVD composition
+    '''
+
     SD, U, VT = cv2.SVDecomp(E)
     S = np.identity(3) * SD
     return (U, S, VT)
 
 def getRotTrans(E):
+    ''' Computes the rotation and Translation matrix based on the Essential Matrix
+
+    :param numpy.ndarray E: Essential Matrix
+    :return: Rotation and Translation
+    '''
+
     # singular values decomposition to get Rotation and Translation from left to right camera.
     U, S, VT = computeSVD(E)
     W = np.array([
@@ -132,6 +144,14 @@ def make_temp_dir(parent='temp'):
 
 
 def draw_mirror_line(x_split, path, real_output_path):
+    ''' Draws the mirror into a given image at the mirror_possition, revertes the mirrored side of the image
+
+    :param int mirror_position:
+    :param numpy.ndarray img: immage on which the mirror should be drawn in
+    :param output_path: path where files should be stored in
+    :return: None
+    '''
+
     cap = cv2.VideoCapture(path)
     ret, img = cap.read()
 

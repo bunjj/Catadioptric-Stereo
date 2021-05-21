@@ -1,8 +1,45 @@
 import numpy as np
 import cv2
 from matplotlib import pyplot as plt
+import sys
 import matplotlib; matplotlib.use('agg')
 from utils import *
+
+# def manual_mirror_detection(frame):
+#     ''' Simple function which takes a mouse klick as input for the manual mirror detection
+#
+#     :param numpy.ndarray frame: Frame on which the mirror detection should be executed
+#     :return: offset of the mirror
+#
+#     '''
+#
+#     _img = frame
+#
+#     params = {'BORDER_OFFSET': -1}
+#
+#     def select_border(event, x, y, flags, params):
+#         try:
+#             if (event == cv2.EVENT_LBUTTONUP) and (params['BORDER_OFFSET'] == -1):
+#                 params['BORDER_OFFSET'] = x
+#             else:
+#                 sys.stdout.write('\r' + "Wait for input:")
+#         except:
+#             print('Error occured in manual_mirror_detection.')
+#
+#     cv2.namedWindow('select border', cv2.WINDOW_NORMAL)
+#     cv2.setMouseCallback('select border', select_border, params)
+#     cv2.setWindowProperty('select border', cv2.WINDOW_FULLSCREEN, 1)
+#     cv2.imshow('select border', _img)
+#
+#     while (1):  # wait for selection or ESC key
+#         if params['BORDER_OFFSET'] >= 0:
+#             break
+#         if cv2.waitKey(20) & 0xFF == 27:
+#             break
+#     cv2.destroyAllWindows()
+#     print('Offset = ' + str(params['BORDER_OFFSET']))
+#     x = params['BORDER_OFFSET'] # x = mirror position
+#     return x
 
 
 #TODO: what is the input needed for?
@@ -46,17 +83,15 @@ def manual_mirror_detection(source_path, ):
 
 #TODO: rewrite function, give more reasonable names
 #TODO: finish doc
-def automatic_mirror_detection(source_path, gridgrid_size):
+def automatic_mirror_detection(path, grid_size):
     ''' Computes automatic mirror detection for an input scene by applying optical flow
 
-    Args:
-        path: path to the video sequence form which the mirror should be extracted from
-        gridgrid_size:
-
-    Returns:
-
+    :param string path: path to Video sequence to compute the optical flow on
+    :param int grid_size: TODO: add explanation
+    :return: offset of the mirror
     '''
-    cap = cv2.VideoCapture(source_path) #video loaded, romeve that
+
+    cap = cv2.VideoCapture(path) #video loaded, romeve that
     # https://opencv-python-tutroals.readthedocs.io/en/latest/py_tutorials/py_gui/py_video_display/py_video_display.html
     # https://docs.opencv.org/3.4/d4/dee/tutorial_optical_flow.html
 
@@ -72,8 +107,6 @@ def automatic_mirror_detection(source_path, gridgrid_size):
     ret, old_frame = cap.read()
     old_gray = cv2.cvtColor(old_frame, cv2.COLOR_BGR2GRAY)
     frame_size = old_gray.shape  # frame size x and y are changed
-
-    grid_size = gridgrid_size
 
     p0 = np.zeros((grid_size, 1, 2), np.float32)
     for point in range(grid_size):
