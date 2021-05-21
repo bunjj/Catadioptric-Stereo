@@ -2,6 +2,7 @@ import numpy as np
 import cv2
 import glob
 from utils import getDownSampledImg
+from FrameIterator import FrameIterator
 
 '''
 Useful parameters for this function might be
@@ -67,11 +68,7 @@ def calibrateChessboard(
 
     width, height = chess_size
 
-    filenames = glob.glob(filepattern)
-    if verbose >= 2: print('filenames: ' + str(filenames))
-
-    if len(filenames) < 1:
-        raise ValueError('Could not find any filename matching the specified file pattern')
+    frame_iter = FrameIterator(filepattern, verbose-1)
 
     if show: cv2.namedWindow('Detected Chessboard Pattern', cv2.WINDOW_NORMAL)
 
@@ -84,11 +81,9 @@ def calibrateChessboard(
     # for every view, store list of points in object and camera coordinates
     list_points_obj = []  # 3D point in object coordinates
     list_points_pix = []  # 2D points pixel coordinates
-    for fname in filenames:
+    for view in frame_iter:
 
-        if verbose >= 1: print('processing ' + fname)
-
-        view = cv2.imread(fname)
+        if verbose >= 1: print(f'processing \'{frame_iter.current_frame()}\'')
 
         # possibly partition image
         if split_position is not None and partition is None:
@@ -115,8 +110,8 @@ def calibrateChessboard(
         flags = None
         ret, points_pix = cv2.findChessboardCorners(view_gray, (width, height), flags)
 
-        if not ret: # only continue if sucessful
-            break 
+        if not ret: # continue with next frame if unsuccessful
+            continue 
 
         # potentially upsample
         points_pix = points_pix/scale

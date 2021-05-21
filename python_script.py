@@ -7,9 +7,13 @@ import matplotlib; matplotlib.use('agg')
 import sys
 import os
 from utils import * #contains all the functions for brevity
-from mirror_detection import manual_mirror_detection, automatic_mirror_detection, draw_mirror_line
+from mirror_detection import manual_mirror_detection, automatic_mirror_detection
 from depth_estimation import calculate_E_F, rectification, calculate_disparity
 from calibration import calibrateChessboard
+# segmentation
+# intrinsics
+# extrinsics
+# stereo
 from parser import make_parser
 # from operator import itemgetter
 
@@ -19,8 +23,9 @@ args = make_parser().parse_args()
 opticalflow_path = 'data/blender/animation_2_0.mkv'
 calibration_path = 'data/real/calibration/*.JPG'
 
-input_path = 'data/blender/animation_2_0.mkv'
-output_path = 'mokey_head_cylinder_v2_d.png'
+input_path = 'data/real/calibration/IMG_2373.JPG'
+
+output_path = 'disparity.png'
 temp_path = make_temp_dir('temp')
 
 # variables

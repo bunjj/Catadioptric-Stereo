@@ -129,3 +129,18 @@ def make_temp_dir(parent='temp'):
     Path(temp_path).mkdir(parents=True, exist_ok=True)
     Path(temp_path+'/disparity_img').mkdir(parents=True, exist_ok=True)
     return temp_path
+
+
+def draw_mirror_line(x_split, path, real_output_path):
+    cap = cv2.VideoCapture(path)
+    ret, img = cap.read()
+
+    imgL, imgR = split_image(img, x_split, 'left', show=False)
+
+    imgL = cv2.cvtColor(imgL, cv2.COLOR_BGR2GRAY)
+    imgR = cv2.cvtColor(imgR, cv2.COLOR_BGR2GRAY)
+
+    # saves images
+    cv2.imwrite(real_output_path + '/imgL.png', imgL)
+    cv2.imwrite(real_output_path + '/imgR.png', imgR)
+    cv2.imwrite(real_output_path + '/select_border.png', img)
