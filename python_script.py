@@ -1,15 +1,13 @@
+from FrameIterator import FrameIterator
 import cv2
 import numpy as np
 from matplotlib import pyplot as plt
-import glob
-import time
 import matplotlib; matplotlib.use('agg')
-import sys
-import os
-from utils import * #contains all the functions for brevity
+
 from intrinsics import calibrateChessboard
-from segmentation import manual_mirror_detection, automatic_mirror_detection
+from segmentation import manual_split, lk_segmentation
 from extrinsics import calculate_E_F, rectification, calculate_disparity
+from utils import * # contains utility functions
 
 # segmentation
 # intrinsics
@@ -38,10 +36,12 @@ output_step = 30
 
 #TODO: adjust this code depending on input parameter
 
+input_image = FrameIterator(input_path).first()
+
 if args.mirror:
-    mirror_position = automatic_mirror_detection(opticalflow_path, 100)
+    mirror_position = lk_segmentation(opticalflow_path, 100)
 else:
-    mirror_position = manual_mirror_detection(input_path)
+    mirror_position = manual_split(input_image, verbose=1)
 
 
 draw_mirror_line(mirror_position, input_path, temp_path)

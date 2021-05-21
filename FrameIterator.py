@@ -14,7 +14,7 @@ class FrameIterator:
     pathpattern : str
         input path pattern to be matched
     verbose : int
-        verbosity (0,1) for standard output
+        verbosity (0,1) for logging into standard output
 
     Methods
     -------
@@ -70,3 +70,21 @@ class FrameIterator:
         path = self.files[self.index]
         pos = int(self.cap.get(cv2.CAP_PROP_POS_FRAMES)) - 1
         return f'{path}::{pos}'
+
+    def first(self):
+        '''Return first frame from first file'''
+        
+        # open new video capture
+        try: cap = cv2.VideoCapture(self.files[0])
+        except: raise RuntimeError('Opening VideoCapture from \'{self.files[0]}\' failed.')
+        
+        # read next frame
+        try: ret, frame = cap.read()
+        except: raise RuntimeError('Reading frame from \'{self.files[0]}\' failed.')
+        
+        # if stream is empty
+        if not ret: raise RuntimeError('Reading frame from \'{self.files[0]}\' failed.')
+        
+        return frame
+        
+

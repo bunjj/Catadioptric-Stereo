@@ -1,21 +1,8 @@
-import numpy as np
 import cv2
-import glob
+import numpy as np
 from utils import getDownSampledImg
 from FrameIterator import FrameIterator
 
-'''
-Useful parameters for this function might be
-filepattern = './images/calibration/*.JPG',
-chess_size=(9,6),
-tile_size=0.014, # <= 14 mm
-split_position = 1446,
-partition='left',
-flip=False,
-scale=1
-verbose=1,
-show=False # or what ever you want
-'''
 
 def calibrateChessboard(
     filepattern,
@@ -49,7 +36,7 @@ def calibrateChessboard(
     :param partition: partition to work on (None, 'left', 'right')
     :param flip: flip partition in case it is mirrored
     :param scale: scale to downsample view for performance \in (0,1]
-    :param verbose: verbosity (0,1,2) for standard output
+    :param verbose: verbosity (0,1,2) for logging into standard output
     :param show: show intermediate results with cv2.imshow()
     :type filepattern: string
     :type chess_size: tuple

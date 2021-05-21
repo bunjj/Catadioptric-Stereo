@@ -70,7 +70,7 @@ def getDownSampledImg(scale, img, verbose=0, show=False):
     
     :param scale: scale of downsampling \in (0,1]
     :param img: input image
-    :param verbose: verbosity (0,1,2) for standard output
+    :param verbose: verbosity (0,1,2) for logging into standard output
     :param show: show intermediate results with cv2.imshow()
     :type scale: float
     :type img: numpy.ndarray

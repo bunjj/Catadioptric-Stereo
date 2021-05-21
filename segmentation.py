@@ -5,86 +5,51 @@ import sys
 import matplotlib; matplotlib.use('agg')
 from utils import *
 
-# def manual_mirror_detection(frame):
-#     ''' Simple function which takes a mouse klick as input for the manual mirror detection
-#
-#     :param numpy.ndarray frame: Frame on which the mirror detection should be executed
-#     :return: offset of the mirror
-#
-#     '''
-#
-#     _img = frame
-#
-#     params = {'BORDER_OFFSET': -1}
-#
-#     def select_border(event, x, y, flags, params):
-#         try:
-#             if (event == cv2.EVENT_LBUTTONUP) and (params['BORDER_OFFSET'] == -1):
-#                 params['BORDER_OFFSET'] = x
-#             else:
-#                 sys.stdout.write('\r' + "Wait for input:")
-#         except:
-#             print('Error occured in manual_mirror_detection.')
-#
-#     cv2.namedWindow('select border', cv2.WINDOW_NORMAL)
-#     cv2.setMouseCallback('select border', select_border, params)
-#     cv2.setWindowProperty('select border', cv2.WINDOW_FULLSCREEN, 1)
-#     cv2.imshow('select border', _img)
-#
-#     while (1):  # wait for selection or ESC key
-#         if params['BORDER_OFFSET'] >= 0:
-#             break
-#         if cv2.waitKey(20) & 0xFF == 27:
-#             break
-#     cv2.destroyAllWindows()
-#     print('Offset = ' + str(params['BORDER_OFFSET']))
-#     x = params['BORDER_OFFSET'] # x = mirror position
-#     return x
 
+def manual_split(img, verbose=0):
+    ''' 
+    Simple function which takes a mouse click as input for the manual mirror detection
 
-#TODO: what is the input needed for?
-def manual_mirror_detection(source_path, ):
-    ''' Method to manually determine the mirror position by mouse input
-
-    Args:
-        source_path: Path to the input sequence
-
-    Returns:
-
+    :param numpy.ndarray img: Image on which the mirror detection should be executed
+    :param verbose: verbosity (0,1) for logging into standard output
+    :return: offset of the mirror
     '''
-    cap = cv2.VideoCapture(source_path)
-    ret, frame = cap.read()
-    _img = frame
+    
+    # dictionary to pass values by reference
+    params = {'SELECTED_SPLIT': -1}
 
-    params = {'BORDER_OFFSET': -1}
-
+    # call back for mouse click
     def select_border(event, x, y, flags, params):
         try:
-            if (event == cv2.EVENT_LBUTTONUP) and (params['BORDER_OFFSET'] == -1):
-                params['BORDER_OFFSET'] = x
+            if (event == cv2.EVENT_LBUTTONUP) and (params['SELECTED_SPLIT'] == -1):
+                params['SELECTED_SPLIT'] = x
         except:
             print('Error occured in manual_mirror_detection.')
 
-    cv2.namedWindow('select border', cv2.WINDOW_NORMAL)
-    cv2.setMouseCallback('select border', select_border, params)
-    #cv2.setWindowProperty('select border', cv2.WINDOW_FULLSCREEN, 1)
-    cv2.imshow('select border', _img)
+    # show image in window with callback
+    window_name = 'Select Split'
+    cv2.namedWindow(window_name, cv2.WINDOW_NORMAL)
+    cv2.setMouseCallback(window_name, select_border, params)
+    #cv2.setWindowProperty(window_name, cv2.WINDOW_FULLSCREEN, 1)
+    cv2.imshow(window_name, img)
 
     while (1):  # wait for selection or ESC key
-        if params['BORDER_OFFSET'] >= 0:
+        if params['SELECTED_SPLIT'] >= 0:
             break
         if cv2.waitKey(20) & 0xFF == 27:
             break
-    cv2.destroyAllWindows()
-    print('Offset = ' + str(params['BORDER_OFFSET']))
-    x = params['BORDER_OFFSET'] # x = mirror position
-    return x
+    cv2.destroyWindow(window_name)
+
+    x_split = params['SELECTED_SPLIT']
+    if verbose >= 1:  print(f'selected split: {x_split}')
+    return x_split
 
 
 #TODO: rewrite function, give more reasonable names
 #TODO: finish doc
-def automatic_mirror_detection(path, grid_size):
-    ''' Computes automatic mirror detection for an input scene by applying optical flow
+def lk_segmentation(path, grid_size, verbose=0, show=False):
+    ''' Computes automatic mirror detection for an input scene by applying 
+    Lukas-Kanade optical flow
 
     :param string path: path to Video sequence to compute the optical flow on
     :param int grid_size: TODO: add explanation
@@ -117,6 +82,10 @@ def automatic_mirror_detection(path, grid_size):
     mask = np.zeros_like(old_frame)
     diff_list = list()
 
+    if show:
+        window_name = 'Lukas-Kanade Mirror Detection'
+        cv2.namedWindow(window_name, cv2.WINDOW_NORMAL)
+
     #TODO: can be made dynamic
     iterater_max = 10 # number of frames for optical flow for mirror detection
     for iteration in range(iterater_max):
@@ -147,8 +116,9 @@ def automatic_mirror_detection(path, grid_size):
             mask = cv2.line(mask, (int(a), int(b)), (int(c), int(d)), color[i].tolist(), 2)
             frame = cv2.circle(frame, (int(a), int(b)), 5, color[i].tolist(), -1)
 
-        img = cv2.add(frame, mask)
-        cv2.imshow('frame', img)
+        if show:
+            img = cv2.add(frame, mask)
+            cv2.imshow(window_name, img)
 
         k = cv2.waitKey(30) & 0xff
         if k == 27:
@@ -157,7 +127,10 @@ def automatic_mirror_detection(path, grid_size):
         # Now update the previous frame and previous points
         old_gray = frame_gray.copy()
         p0 = good_new.reshape(-1, 1, 2)
-
+    
+    if show:
+        cv2.waitKey(0)
+        cv2.destroyWindow(window_name)
 
     # TODO: Threshold can be made dynamically
     # Assigns 1 and -1 if the point was moving right or left from frame to frame. Afterwards it checks if
@@ -184,7 +157,7 @@ def automatic_mirror_detection(path, grid_size):
 
     mirror_position_x = int((latest_positive_value_x_coordinate + first_negative_value_x_coordinate) / 2)
 
-    print('automatic mirror detection leads to mirror_position_x: ', mirror_position_x)
+    if verbose >= 1: print(f'automatic mirror detection leads to mirror_position_x: {mirror_position_x}')
 
     return mirror_position_x
 
