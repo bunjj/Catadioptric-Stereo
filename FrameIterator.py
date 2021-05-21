@@ -5,7 +5,7 @@ class FrameIterator:
     """
     An iterator to iterate over multiple files containing either 
     images other videos. The files are gathered using pattern matching
-    read with the universal cv2.VideoCapture
+    and read with the universal cv2.VideoCapture().
 
     ...
 
@@ -18,8 +18,8 @@ class FrameIterator:
 
     Methods
     -------
-    current_file():
-        Returns the path of the current file.
+    current_frame():
+        Returns the path and position of the current frame.
     """
     def __init__(self, pathpattern, verbose=0):
         self.pathpattern = pathpattern
@@ -66,7 +66,7 @@ class FrameIterator:
 
 
     def current_frame(self):  
-        ''' return path and position of the current frame '''
+        '''Return path and position of the current frame.'''
         path = self.files[self.index]
         pos = int(self.cap.get(cv2.CAP_PROP_POS_FRAMES)) - 1
         return f'{path}::{pos}'
