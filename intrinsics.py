@@ -24,7 +24,7 @@ def calibrateChessboard(
     split_position=None,
     partition=None,
     flip=False,
-    scale=1,
+    scale=1.0,
     verbose=0,
     show=False,
     ):
@@ -102,7 +102,7 @@ def calibrateChessboard(
         # convert view to grayscale
         view_gray = cv2.cvtColor(view, cv2.COLOR_BGR2GRAY)
                     
-        if scale < 1: # possibly downsample view for performance
+        if scale < 1.0: # possibly downsample view for performance
             view_gray = getDownSampledImg(scale, view_gray)
 
 

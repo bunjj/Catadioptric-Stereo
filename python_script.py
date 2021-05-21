@@ -1,5 +1,5 @@
-import numpy as np
 import cv2
+import numpy as np
 from matplotlib import pyplot as plt
 import glob
 import time
@@ -7,18 +7,19 @@ import matplotlib; matplotlib.use('agg')
 import sys
 import os
 from utils import * #contains all the functions for brevity
-from mirror_detection import manual_mirror_detection, automatic_mirror_detection
-from depth_estimation import calculate_E_F, rectification, calculate_disparity
-from calibration import calibrateChessboard
+from intrinsics import calibrateChessboard
+from segmentation import manual_mirror_detection, automatic_mirror_detection
+from extrinsics import calculate_E_F, rectification, calculate_disparity
+
 # segmentation
 # intrinsics
 # extrinsics
 # stereo
+
 from parser import make_parser
 # from operator import itemgetter
 
 args = make_parser().parse_args()
-
 
 opticalflow_path = 'data/blender/animation_2_0.mkv'
 calibration_path = 'data/real/calibration/*.JPG'
@@ -50,8 +51,8 @@ draw_mirror_line(mirror_position, input_path, temp_path)
 if args.inrinsic:
     K,_,_ = calibrateChessboard(
         filepattern = calibration_path,
-        chess_size=(9,6),
-        tile_size=0.014, # <= 14 mm
+        chess_size=(7,7),
+        tile_size=0.2, # <= 14 mm
         split_position=mirror_position,
         partition='left',
         flip=False,
@@ -90,50 +91,52 @@ iterator = 0
 
 
 
-print('\n\n\nStart of img reading of mov clip and building of disparity map.\n')
-while(cap.isOpened()):
-    ret, frame = cap.read()
 
-    if not ret: # only continue if sucessful
-        break
 
-    imgR, imgL = split_image(frame, mirror_position, 'left')
-    imgL = cv2.cvtColor(imgL, cv2.COLOR_BGR2GRAY)
-    imgR = cv2.cvtColor(imgR, cv2.COLOR_BGR2GRAY)
+# print('\n\n\nStart of img reading of mov clip and building of disparity map.\n')
+# while(cap.isOpened()):
+#     ret, frame = cap.read()
 
-    rectR , rectL = rectification(imgR, imgL, pts1, pts2, F)
-    disparity = calculate_disparity(rectR, rectL)
+#     if not ret: # only continue if sucessful
+#         break
+
+#     imgR, imgL = split_image(frame, mirror_position, 'left')
+#     imgL = cv2.cvtColor(imgL, cv2.COLOR_BGR2GRAY)
+#     imgR = cv2.cvtColor(imgR, cv2.COLOR_BGR2GRAY)
+
+#     rectR , rectL = rectification(imgR, imgL, pts1, pts2, F)
+#     disparity = calculate_disparity(rectR, rectL)
     
-    fig.canvas.draw() # to be able to save the figure
-    plt.imshow(disparity)
+#     fig.canvas.draw() # to be able to save the figure
+#     plt.imshow(disparity)
 
-    # redraw the canvas
-    # https://stackoverflow.com/questions/7821518/matplotlib-save-plot-to-numpy-array
-    fig.canvas.draw()
+#     # redraw the canvas
+#     # https://stackoverflow.com/questions/7821518/matplotlib-save-plot-to-numpy-array
+#     fig.canvas.draw()
 
-    # convert canvas to image
-    img = np.fromstring(fig.canvas.tostring_rgb(), dtype=np.uint8, sep='')
-    img = img.reshape(fig.canvas.get_width_height()[::-1] + (3,))
+#     # convert canvas to image
+#     img = np.fromstring(fig.canvas.tostring_rgb(), dtype=np.uint8, sep='')
+#     img = img.reshape(fig.canvas.get_width_height()[::-1] + (3,))
 
-    # img is rgb, convert to opencv's default bgr
-    img = cv2.cvtColor(img,cv2.COLOR_RGB2BGR)
+#     # img is rgb, convert to opencv's default bgr
+#     img = cv2.cvtColor(img,cv2.COLOR_RGB2BGR)
 
-    # display image with opencv or any operation you like
-    cv2.imshow('output',img)
-    cap.set(1, iterator)
+#     # display image with opencv or any operation you like
+#     cv2.imshow('output',img)
+#     cap.set(1, iterator)
 
-    cv2.imwrite(temp_path + '/disparity_img/{0}.png'.format(iterator), img)
+#     cv2.imwrite(temp_path + '/disparity_img/{0}.png'.format(iterator), img)
 
-    print('Number of frame: ', iterator, ' iteration step: ', output_step)
-    iterator = iterator+output_step
+#     print('Number of frame: ', iterator, ' iteration step: ', output_step)
+#     iterator = iterator+output_step
 
-    # if the `q` key was pressed, break from the loop
-    key = cv2.waitKey(1) & 0xFF #necessary on 64-bit machines
-    if key == ord("q"):
-        break
+#     # if the `q` key was pressed, break from the loop
+#     key = cv2.waitKey(1) & 0xFF #necessary on 64-bit machines
+#     if key == ord("q"):
+#         break
 
 
-cap.release()
-cv2.destroyAllWindows()
-print('script has ended.')
+# cap.release()
+# cv2.destroyAllWindows()
+# print('script has ended.')
 
