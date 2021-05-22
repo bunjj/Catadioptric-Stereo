@@ -59,6 +59,8 @@ def lk_segmentation(path, grid_size, verbose=0, show=False):
     # https://opencv-python-tutroals.readthedocs.io/en/latest/py_tutorials/py_gui/py_video_display/py_video_display.html
     # https://docs.opencv.org/3.4/d4/dee/tutorial_optical_flow.html
 
+    #TODO: isn't this defined in the python script? wouldn't it make sense to give this over as a paremter?
+
     # Parameters for lucas kanade optical flow
     lk_params = dict(winSize=(15, 15),
                      maxLevel=4,

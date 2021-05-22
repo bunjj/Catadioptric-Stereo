@@ -80,6 +80,8 @@ print(f'img.shape={img.shape}')
 
 
 # fill missing values with defaults
+
+#TODO: wouldn't it make sense to add this above where we add the parameters from the parser? probably not that important though
 if K is None:
     K = get_intrinsics()
 if mirror_segmentation is None:

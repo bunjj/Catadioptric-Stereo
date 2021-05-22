@@ -2,6 +2,7 @@ import bpy
 import bpy_extras
 from mathutils import Matrix
 from mathutils import Vector
+import numpy as np
 
 
 # ---------------------------------------------------------------
@@ -166,5 +167,5 @@ if __name__ == "__main__":
 
     # Bonus code: save the 3x4 P matrix into a plain text file
     # Don't forget to import numpy for this
-    nP = numpy.matrix(P)
-    numpy.savetxt("/tmp/P3x4.txt", nP) 
+    nP = np.matrix(P)
+    np.savetxt("/tmp/P3x4.txt", nP)

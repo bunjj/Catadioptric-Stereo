@@ -183,7 +183,6 @@ print('SIFT_detector has ended: ')
 ###############################################################################
 # Mirror Detection
 ###############################################################################
-# Was thinking with edge detection for the mirror corner. But optical flow is probably a better solution.
 img = cv2.imread('blender_capture.png')
 img = cv2.cvtColor(img[:, :, :], cv2.COLOR_BGR2GRAY)
 height, width = img.shape
