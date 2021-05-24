@@ -98,7 +98,7 @@ E, F, pts1, pts2 = calculate_E_F(imgL, imgR, K, temp_path)
 # compute rectified stereo pair
 rectR , rectL = rectification(imgL, imgR, pts1, pts2, F)
 
-# compute disparity using semi-global matching
+# compute disparity using semi-global block matching
 stereo = cv2.StereoSGBM_create(minDisparity=-20, numDisparities=50, blockSize=18, speckleRange=50,
                                 speckleWindowSize=30, uniquenessRatio=9)
 disparity = stereo.compute(rectL, rectR)
