@@ -1,11 +1,12 @@
+from glob import glob
 from pathlib import Path
 import numpy as np
+import matplotlib.pyplot as plt
 import cv2
 import time
 import os
 
-
-def split_image(img, x_split, flip, show=False):
+def split_image(img, x_split, flip, temp_path, show=False):
     """
     Split image horizontally at position x_split, crop both sides
     to a common width and flip one side.    
@@ -30,9 +31,11 @@ def split_image(img, x_split, flip, show=False):
     imgL = img[:, :x_split, :]
     imgR = img[:, x_split:, :]
 
-    if show: # draw splitted images
-        line = np.zeros((height, 2, 3), dtype=np.uint8)
-        canvas = np.concatenate([imgL, line, imgR], axis=1)
+    # draw splitted images
+    line = np.zeros((height, 2, 3), dtype=np.uint8)
+    canvas = np.concatenate([imgL, line, imgR], axis=1)
+    cv2.imwrite(temp_path + '/splitted.png', canvas)
+    if show: 
         cv2.imshow(window_name, canvas)
         cv2.waitKey(0)
 
@@ -41,9 +44,11 @@ def split_image(img, x_split, flip, show=False):
     imgL = imgL[:, -new_width:, :]
     imgR = imgR[:, :new_width, :]
 
-    if show: # draw cropped images
-        line = np.zeros((height, 2, 3), dtype=np.uint8)
-        canvas = np.concatenate([imgL, line, imgR], axis=1)
+    # draw cropped images
+    line = np.zeros((height, 2, 3), dtype=np.uint8)
+    canvas = np.concatenate([imgL, line, imgR], axis=1)
+    cv2.imwrite(temp_path + '/cropped.png', canvas)
+    if show: 
         cv2.imshow(window_name, canvas)
         cv2.waitKey(0)
 
@@ -53,9 +58,11 @@ def split_image(img, x_split, flip, show=False):
     elif flip=='left':
         imgL = cv2.flip(imgL, 1)
 
-    if show: # draw flipped image
-        line = np.zeros((height, 2, 3), dtype=np.uint8)
-        canvas = np.concatenate([imgL, line, imgR], axis=1)
+    # draw flipped image
+    line = np.zeros((height, 2, 3), dtype=np.uint8)
+    canvas = np.concatenate([imgL, line, imgR], axis=1)
+    cv2.imwrite(temp_path + '/flipped.png', canvas)
+    if show: 
         cv2.imshow(window_name, canvas)
         cv2.waitKey(0)
 
@@ -165,3 +172,74 @@ def draw_mirror_line(x_split, path, real_output_path):
     cv2.imwrite(real_output_path + '/imgL.png', imgL)
     cv2.imwrite(real_output_path + '/imgR.png', imgR)
     cv2.imwrite(real_output_path + '/select_border.png', img)
+
+def draw_stereo(canvL, canvR, path):
+    '''
+    Draws two gray or BGR images into a matplotlib figure with subplots
+    and stores the result into a file specified by path.
+    :param numpy.ndarray canvL: left canvas to draw
+    :param numpy.ndarray canvR: right canvas to draw
+    :param path: path where file should be stored
+    :return: None
+    '''
+    plt.figure(figsize=(15,14))
+
+    _, ax = plt.subplots(1,2)
+
+    if canvL.ndim == 2:
+        ax[0].imshow(canvL, cmap='gray')
+    elif canvL.ndim == 3:
+        ax[0].imshow(np.flip(canvL, axis=2)) # from BGR -> RGB
+    else:
+        raise ValueError(f'Can\'t handle dimensions {canvL.ndim}')
+
+    if canvR.ndim == 2:
+        ax[1].imshow(canvR, cmap='gray')
+    elif canvR.ndim == 3:
+        ax[1].imshow(np.flip(canvR, axis=2))    
+    else:
+        raise ValueError(f'Can\'t handle dimensions {canvR.ndim}')
+
+    plt.savefig(path)
+
+def draw_lines(img, lines, pts):
+    ''' 
+    Draw epilines and their corresponding keypoints onto the 
+    image and reaturn the canvas.
+    :param numpy.ndarray img: input image
+    :param numpy.ndarray lines: epilines
+    :param numpy.ndarray pts: keypoints
+    :return: None
+    '''
+
+    canv = img.copy()
+    if(len(canv.shape) == 2): # make color
+        canv = cv2.cvtColor(canv, cv2.COLOR_GRAY2BGR)
+
+    r, c, _ = canv.shape
+    for r, pt in zip(lines, pts):
+        color = tuple(np.random.randint(0, 255, 3).tolist())
+        x0, y0 = map(int, [0, -r[2]/r[1] ])
+        x1, y1 = map(int, [c, -(r[2]+r[0]*c)/r[1] ])
+        canv = cv2.line(canv, (x0, y0), (x1, y1), color, 1)
+        canv = cv2.circle(canv, tuple(pt), 5, color, -1)
+    return canv
+
+def draw_epilines(imgL, imgR, ptsL, ptsR, F, original='right'):
+    #if original == 'right':
+    # Find epilines corresponding to points in right image (second image) and
+    # drawing its lines on left image
+    linesL = cv2.computeCorrespondEpilines(ptsR.reshape(-1, 1, 2), 1, F)
+    linesL = linesL.reshape(-1, 3)
+    canvasL = draw_lines(imgL, linesL, ptsL)
+
+
+        
+    # Find epilines corresponding to points in left image (first image) and
+    # drawing its lines on right image
+    linesR = cv2.computeCorrespondEpilines(ptsL.reshape(-1, 1, 2), 1, F)
+    linesR = linesR.reshape(-1, 3)
+    canvasR = draw_lines(imgR, linesR, ptsR)
+
+
+    return canvasL, canvasR

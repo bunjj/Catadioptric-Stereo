@@ -2,7 +2,7 @@ from FrameIterator import FrameIterator
 import cv2
 import numpy as np
 from matplotlib import pyplot as plt
-import matplotlib; matplotlib.use('agg')
+#import matplotlib; matplotlib.use('agg')
 
 from intrinsics import calibrateChessboard
 from segmentation import manual_split, lk_segmentation
@@ -17,18 +17,18 @@ from parser import make_parser
 args = make_parser().parse_args()
 
 opticalflow_path = 'data/blender/optical_flow.avi'
-intrinsics_path = 'data/real/calibration/*.JPG'
+intrinsics_path = 'data/blender/demo4paper.png'
 temp_path = make_temp_dir('temp')
 
-input_path = 'data/blender/blender_chessboard.png'
+input_path = 'data/blender/demo4paper.png'
 output_path = temp_path + '/depth.png'
 
 # parameters for intrinsics calibration
 intrinsics_params = dict(        
-    chess_size=(9,6),
-    tile_size=0.014, # <= 14 mm
+    chess_size=(5,5),
+    tile_size=0.25, # <= 14 mm
     partition='left',
-    flip=False,
+    flip=True,
     verbose=1,
     show=False)
 
@@ -90,13 +90,21 @@ print('here')
 
 
 # split and flip image according to mirror position into stereo pair
-imgL, imgR = split_image(img, mirror_segmentation, flip='left', show=False)
+imgL, imgR = split_image(img, mirror_segmentation, flip='left', temp_path=temp_path, show=False)
 
 # calculate essential and fundamental matrices as well as the SIFT keypoints
 E, F, pts1, pts2 = calculate_E_F(imgL, imgR, K, temp_path)
+canvL, canvR = draw_epilines(imgL, imgR, pts1, pts2, F)
+draw_stereo(canvL, canvR, temp_path + '/epilines_unrect.png')
 
+print("after drawing epilines", imgL.shape)
 # compute rectified stereo pair
-rectR , rectL = rectification(imgL, imgR, pts1, pts2, F)
+canvL , canvR = rectification(canvL, canvR, pts1, pts2, F)
+draw_stereo(canvL, canvR, temp_path + '/epilines_rect.png')
+
+rectL , rectR = rectification(imgL, imgR, pts1, pts2, F)
+draw_stereo(rectL, rectR, temp_path + '/recitifation.png')
+
 
 # compute disparity using semi-global block matching
 stereo = cv2.StereoSGBM_create(minDisparity=-20, numDisparities=50, blockSize=18, speckleRange=50,
