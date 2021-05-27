@@ -103,4 +103,4 @@ def rectification(imgL, imgR, pts1, pts2, F):
     info, HL, HR = cv2.stereoRectifyUncalibrated(pts1, pts2, F, (widthL, heightL))
     rectL = cv2.warpPerspective(imgL, HL, (imgL.shape[1], imgL.shape[0]))
     rectR = cv2.warpPerspective(imgR, HR, (imgR.shape[1], imgR.shape[0]))
-    return rectR, rectL
+    return rectL, rectR
