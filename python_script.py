@@ -91,20 +91,21 @@ if mirror_segmentation is None:
 
 
 # split and flip image according to mirror position into stereo pair
-imgL, imgR = split_image(img, mirror_segmentation, flip='right', temp_path=temp_path, show=False)
-
+imgL, imgR, maskL, maskR = split_image(img, mirror_segmentation, flip='right', temp_path=temp_path, show=False)
 # calculate essential and fundamental matrices as well as the SIFT keypoints
 E, F, pts1, pts2 = calculate_E_F(imgL, imgR, K, temp_path)
 canvL, canvR = draw_epilines(imgL, imgR, pts1, pts2, F)
 draw_stereo(canvL, canvR, path.join(temp_path,'06_epilines_unrect.png'))
 
-print("after drawing epilines", imgL.shape)
 # compute rectified stereo pair
-canvL , canvR = rectification(canvL, canvR, pts1, pts2, F)
+canvL, canvR, = rectification(canvL, canvR, pts1, pts2, F)
 draw_stereo(canvL, canvR, path.join(temp_path,'07_epilines_rect.png'))
 
-rectL , rectR = rectification(imgL, imgR, pts1, pts2, F)
-draw_stereo(rectL, rectR, path.join(temp_path,'08_recitifation.png'))
+rectL, rectR = rectification(imgL, imgR, pts1, pts2, F)
+draw_stereo(rectL, rectR, path.join(temp_path,'08_rectification.png'))
+
+maskL, maskR = rectification(maskL, maskR, pts1, pts2, F)
+draw_stereo(maskL * 255, maskR * 255, path.join(temp_path,'08_rectification_masked.png'))
 
 
 # compute disparity using semi-global block matching
@@ -112,8 +113,15 @@ stereo = cv2.StereoSGBM_create(minDisparity=-20, numDisparities=50, blockSize=18
                                 speckleWindowSize=30, uniquenessRatio=9)
 disparity = stereo.compute(rectL, rectR)
 
+# mask disparity
+mask = np.logical_and(maskL, maskR).astype(np.uint8)
+disparity = np.multiply(mask[:,:,0], disparity)
 
-cv2.imwrite(path.join(temp_path,'09_disparity.png'), disparity / disparity)
+# draw disparity
+canvas = disparity.copy()
+canvas = canvas - canvas.min()
+canvas = canvas / canvas.max() * 255
+cv2.imwrite(path.join(temp_path,'09_disparity.png'), canvas)
 
 # get the translation and estimate horizontal focal length
 _, t = getRotTrans(E)
@@ -127,7 +135,7 @@ depth = distance * x_focal / disparity
 #  Plot Estimated Depth Map
 ###############################################################################
 
-im = plt.imshow(depth)
+im = plt.imshow(disparity)
 plt.colorbar(im,fraction=0.046, pad=0.04)
 plt.savefig(output_path)
 

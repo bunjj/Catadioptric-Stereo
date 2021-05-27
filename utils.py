@@ -37,32 +37,25 @@ def split_image(img, x_split, flip, temp_path, show=False):
         cv2.waitKey(0)
 
     # mask images
-    imgL[:, x_split:, :] = 0
-    imgR[:, :x_split, :] = 0
+    maskL = np.ones_like(imgL)
+    maskR = np.ones_like(imgR)
+    maskL[:, x_split:, :] = 0
+    maskR[:, :x_split, :] = 0
+    imgL = np.multiply(maskL, imgL) 
+    imgR = np.multiply(maskR, imgR) 
     canvas = draw_stereo(imgL, imgR, os.path.join(temp_path,'02_masked.png'))
 
     if show: 
         cv2.imshow(window_name, canvas)
         cv2.waitKey(0)
 
-    # crop images from center
-    #new_width = min(widthL, widthR)
-    #imgL = imgL[:, -new_width:, :]
-    #imgR = imgR[:, :new_width, :]
-
-    # draw cropped images
-    #line = np.zeros((height, 2, 3), dtype=np.uint8)
-    #canvas = np.concatenate([imgL, line, imgR], axis=1)
-    #cv2.imwrite(temp_path + '/02_cropped.png', canvas)
-    #if show: 
-    #    cv2.imshow(window_name, canvas)
-    #    cv2.waitKey(0)
-
     # flip left or right image horizontally
-    if flip=='right':
-        imgR = cv2.flip(imgR, 1)
-    elif flip=='left':
+    if flip=='left':
         imgL = cv2.flip(imgL, 1)
+        maskL = cv2.flip(maskL, 1)
+    elif flip=='right':
+        imgR = cv2.flip(imgR, 1)
+        maskR = cv2.flip(maskR, 1)
 
     # draw flipped image
     canvas = draw_stereo(imgL, imgR, os.path.join(temp_path,'03_flipped.png'))
@@ -71,7 +64,7 @@ def split_image(img, x_split, flip, temp_path, show=False):
         cv2.waitKey(0)
 
     if show: cv2.destroyWindow(window_name)
-    return imgL, imgR
+    return imgL, imgR, maskL, maskR
 
 def getDownSampledImg(scale, img, verbose=0, show=False):
     """
