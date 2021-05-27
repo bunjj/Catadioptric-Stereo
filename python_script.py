@@ -87,7 +87,8 @@ cv2.imwrite(path.join(temp_path,'00_input.png'), img)
 
 #TODO: wouldn't it make sense to add this above where we add the parameters from the parser? probably not that important though
 if K is None:
-    K = get_intrinsics()
+    width, height = img.shape[1], img.shape[0]
+    K = manual_K(width, height, focal_length_mm=27.9, sensor_width_mm=36)
 if mirror_segmentation is None:
     mirror_segmentation = manual_split(img, verbose=1)
 
@@ -99,7 +100,7 @@ E, F, pts1, pts2 = calculate_E_F(imgL, imgR, K, temp_path)
 
 E_man = manual_E(np.array([0,1,0]), 4.0 * np.pi / 180, np.array([0.3,0,0.01]))
 F_man = manual_F(K, E_man)
-print('\nmanual K:\n', K.round(2))
+print('\n K:\n', K.round(2))
 print('manual E:\n', E_man.round(2))
 print('manual F:\n', F_man.round(2))
 
