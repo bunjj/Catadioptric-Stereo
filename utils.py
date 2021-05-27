@@ -126,6 +126,9 @@ def getRotTrans(E):
     # rotation matrix
     R = np.matmul(np.matmul(U, W.T), VT)
 
+    #R1, R2, t = cv2.decomposeEssentialMat(E)
+    #print('err: ', cv2.Rodrigues(R1)[0] - cv2.Rodrigues(R2)[0])
+    #print(R1.round(2), '\n', R2.round(2), '\n', t)
     print('')
     print(f'Rotation from one camera to the other:\n{R.round(2)}\n')
     
@@ -156,6 +159,33 @@ def get_intrinsics():
                   [0.0000, 743.999, 272.0000],
                   [0.0000, 0.0000, 1.0000]])
     return K
+
+def manual_K(width_px, height_px, focal_length_mm, sensor_width_mm):
+
+    aspect_ratio = height_px / width_px
+    sensor_height_mm = aspect_ratio * sensor_width_mm
+
+    K = np.zeros((3,3))
+
+    K[0,0] = focal_length_mm * width_px / sensor_width_mm
+    K[1,1] = focal_length_mm * height_px / sensor_height_mm
+
+    K[0,2] = width_px / 2
+    K[1,2] = height_px / 2
+    K[2,2] = 1.0
+    return K
+
+def skew(x):
+    return np.array([[0, -x[2], x[1]],
+                     [x[2], 0, -x[0]],
+                     [-x[1], x[0], 0]])
+
+def manual_E(rot_axis, angle, translation):
+    R, _ = cv2.Rodrigues(rot_axis * angle)
+    return np.matmul(skew(translation), R)
+
+def manual_F(K, E):
+    return np.linalg.inv(K)*E*K
 
 def make_temp_dir(parent='temp'):
     time_now = time.strftime('%Y-%m-%d--%H-%M-%S')
@@ -246,7 +276,7 @@ def draw_epilines(imgL, imgR, ptsL, ptsR, F, original='right'):
     #if original == 'right':
     # Find epilines corresponding to points in right image (second image) and
     # drawing its lines on left image
-    linesL = cv2.computeCorrespondEpilines(ptsR.reshape(-1, 1, 2), 1, F)
+    linesL = cv2.computeCorrespondEpilines(ptsR.reshape(-1, 1, 2), 2, F)
     linesL = linesL.reshape(-1, 3)
     canvasL = draw_lines(imgL, linesL, ptsL)
 

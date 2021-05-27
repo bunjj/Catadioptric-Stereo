@@ -60,7 +60,7 @@ def calculate_E_F(imgL, imgR, K, temp_path):
     # method can be changed to RANSAC if wanted.
     F, mask = cv2.findFundamentalMat(pts1, pts2, method=cv2.FM_7POINT)
     print('\nFundamental Matrix: ')
-    print(F)
+    print(F.round(2))
     # (https://stackoverflow.com/questions/59014376/what-do-i-do-with-the-fundamental-matrix)
 
     # We select only inlier points, needed for rectification
@@ -72,7 +72,7 @@ def calculate_E_F(imgL, imgR, K, temp_path):
     # method can be changed to RANSAC if wanted.
     E, mask2 = cv2.findEssentialMat(pts1, pts2, cameraMatrix=K, method=cv2.FM_7POINT)
     print('\nEssential vMatrix: ')
-    print(E)
+    print(E.round(2))
 
     # cv2.drawMatchesKnn expects list of lists as matches.
     canvMatches = cv2.drawMatchesKnn(imgL, kp1, imgR, kp2, good, flags=2, outImg=None)
