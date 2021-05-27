@@ -156,7 +156,7 @@ def getRotTrans(E):
 #At the moment hard coded intrinsics
 def get_intrinsics():
     K = np.array([[743.999, 0.0000, 480.0000],
-                  [0.0000, 743.999, 272.0000],
+                  [0.0000, 743.999, 272.5000],
                   [0.0000, 0.0000, 1.0000]])
     return K
 
