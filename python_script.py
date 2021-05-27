@@ -9,6 +9,7 @@ from segmentation import manual_split, lk_segmentation
 from extrinsics import calculate_E_F, rectification
 from utils import * # contains utility functions
 from parser import make_parser
+from os import path
 
 ###############################################################################
 # Setup Parameters and Parse Arguments
@@ -20,7 +21,7 @@ opticalflow_path = 'data/blender/optical_flow.avi'
 intrinsics_path = 'data/blender/demo4paper.png'
 temp_path = make_temp_dir('temp')
 
-input_path = 'data/blender/demo4paper.png'
+input_path = 'right_mirror-_92_degrees.png'
 output_path = temp_path + '/depth.png'
 
 # parameters for intrinsics calibration
@@ -77,6 +78,7 @@ else: mirror_segmentation=None
 # load input image
 img = FrameIterator(input_path).first()
 print(f'img.shape={img.shape}')
+cv2.imwrite(path.join(temp_path,'00_input.png'), img)
 
 
 # fill missing values with defaults
@@ -86,24 +88,23 @@ if K is None:
     K = get_intrinsics()
 if mirror_segmentation is None:
     mirror_segmentation = manual_split(img, verbose=1)
-print('here')
 
 
 # split and flip image according to mirror position into stereo pair
-imgL, imgR = split_image(img, mirror_segmentation, flip='left', temp_path=temp_path, show=False)
+imgL, imgR = split_image(img, mirror_segmentation, flip='right', temp_path=temp_path, show=False)
 
 # calculate essential and fundamental matrices as well as the SIFT keypoints
 E, F, pts1, pts2 = calculate_E_F(imgL, imgR, K, temp_path)
 canvL, canvR = draw_epilines(imgL, imgR, pts1, pts2, F)
-draw_stereo(canvL, canvR, temp_path + '/epilines_unrect.png')
+draw_stereo(canvL, canvR, path.join(temp_path,'06_epilines_unrect.png'))
 
 print("after drawing epilines", imgL.shape)
 # compute rectified stereo pair
 canvL , canvR = rectification(canvL, canvR, pts1, pts2, F)
-draw_stereo(canvL, canvR, temp_path + '/epilines_rect.png')
+draw_stereo(canvL, canvR, path.join(temp_path,'07_epilines_rect.png'))
 
 rectL , rectR = rectification(imgL, imgR, pts1, pts2, F)
-draw_stereo(rectL, rectR, temp_path + '/recitifation.png')
+draw_stereo(rectL, rectR, path.join(temp_path,'08_recitifation.png'))
 
 
 # compute disparity using semi-global block matching
@@ -111,10 +112,13 @@ stereo = cv2.StereoSGBM_create(minDisparity=-20, numDisparities=50, blockSize=18
                                 speckleWindowSize=30, uniquenessRatio=9)
 disparity = stereo.compute(rectL, rectR)
 
+
+cv2.imwrite(path.join(temp_path,'09_disparity.png'), disparity / disparity)
+
 # get the translation and estimate horizontal focal length
 _, t = getRotTrans(E)
 distance = np.linalg.norm(t)
-x_focal = K[0,0]
+x_focal = K[0,0] # TODO: what about sensor size?!
 
 # computedepth
 depth = distance * x_focal / disparity
@@ -123,9 +127,8 @@ depth = distance * x_focal / disparity
 #  Plot Estimated Depth Map
 ###############################################################################
 
-plt.figure(figsize=(15, 15))
-plt.imshow(disparity)
-plt.colorbar()
+im = plt.imshow(depth)
+plt.colorbar(im,fraction=0.046, pad=0.04)
 plt.savefig(output_path)
 
 

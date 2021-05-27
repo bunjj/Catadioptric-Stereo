@@ -27,30 +27,36 @@ def split_image(img, x_split, flip, temp_path, show=False):
     widthL = x_split
     widthR = width - x_split
 
-    # split images
-    imgL = img[:, :x_split, :]
-    imgR = img[:, x_split:, :]
+    # du images
+    imgL = img.copy()
+    imgR = img.copy()
+    canvas = draw_stereo(imgL, imgR, os.path.join(temp_path,'01_sidebyside.png'))
 
-    # draw splitted images
-    line = np.zeros((height, 2, 3), dtype=np.uint8)
-    canvas = np.concatenate([imgL, line, imgR], axis=1)
-    cv2.imwrite(temp_path + '/splitted.png', canvas)
+    if show: 
+        cv2.imshow(window_name, canvas)
+        cv2.waitKey(0)
+
+    # mask images
+    imgL[:, x_split:, :] = 0
+    imgR[:, :x_split, :] = 0
+    canvas = draw_stereo(imgL, imgR, os.path.join(temp_path,'02_masked.png'))
+
     if show: 
         cv2.imshow(window_name, canvas)
         cv2.waitKey(0)
 
     # crop images from center
-    new_width = min(widthL, widthR)
-    imgL = imgL[:, -new_width:, :]
-    imgR = imgR[:, :new_width, :]
+    #new_width = min(widthL, widthR)
+    #imgL = imgL[:, -new_width:, :]
+    #imgR = imgR[:, :new_width, :]
 
     # draw cropped images
-    line = np.zeros((height, 2, 3), dtype=np.uint8)
-    canvas = np.concatenate([imgL, line, imgR], axis=1)
-    cv2.imwrite(temp_path + '/cropped.png', canvas)
-    if show: 
-        cv2.imshow(window_name, canvas)
-        cv2.waitKey(0)
+    #line = np.zeros((height, 2, 3), dtype=np.uint8)
+    #canvas = np.concatenate([imgL, line, imgR], axis=1)
+    #cv2.imwrite(temp_path + '/02_cropped.png', canvas)
+    #if show: 
+    #    cv2.imshow(window_name, canvas)
+    #    cv2.waitKey(0)
 
     # flip left or right image horizontally
     if flip=='right':
@@ -59,9 +65,7 @@ def split_image(img, x_split, flip, temp_path, show=False):
         imgL = cv2.flip(imgL, 1)
 
     # draw flipped image
-    line = np.zeros((height, 2, 3), dtype=np.uint8)
-    canvas = np.concatenate([imgL, line, imgR], axis=1)
-    cv2.imwrite(temp_path + '/flipped.png', canvas)
+    canvas = draw_stereo(imgL, imgR, os.path.join(temp_path,'03_flipped.png'))
     if show: 
         cv2.imshow(window_name, canvas)
         cv2.waitKey(0)
@@ -128,19 +132,35 @@ def getRotTrans(E):
     ])
     # rotation matrix
     R = np.matmul(np.matmul(U, W.T), VT)
+
+    print('')
+    print(f'Rotation from one camera to the other:\n{R.round(2)}\n')
+    
     # get translation in cross matrix, then vector
     tx = np.matmul(U, np.matmul(W, np.matmul(S, U.T)))
     mask = [[2, 1], [0, 2], [1, 0]]
     t = tx[[2, 0, 1], [1, 2, 0]].reshape(-1, 1)
-    print('\n\nRatation from one camera to the other:\n', np.round(R, decimals=2),
-          '\n\nTranslation from one camera to the other:\n', np.round(t, decimals=2))
+    print(f'Translation from one camera to the other:\n{t.round(2)}\n')
+    
+
+    # Disentangle Rotation matrix
+    rot_vec, _ = cv2.Rodrigues(R)
+    angle = np.linalg.norm(rot_vec) 
+    rot_vec = rot_vec/angle
+    print(f'=> Rotation vector {rot_vec.flatten().round(2)} with angle {angle.round(2)}'),
+    
+    # Disentangle Translation vector
+    distance = np.linalg.norm(t)
+    disp_vec = t / distance
+    print(f'=> Displacement vector {disp_vec.flatten().round(2)} with distance {distance.round(2)}')
+
     return (R, t)
 
 #TODO: hardcoded intrinsics?;
 #At the moment hard coded intrinsics
 def get_intrinsics():
-    K = np.array([[1333.3334, 0.0000, 480.0000],
-                  [0.0000, 1333.3334, 270.0000],
+    K = np.array([[743.999, 0.0000, 480.0000],
+                  [0.0000, 743.999, 272.0000],
                   [0.0000, 0.0000, 1.0000]])
     return K
 
@@ -182,25 +202,29 @@ def draw_stereo(canvL, canvR, path):
     :param path: path where file should be stored
     :return: None
     '''
-    plt.figure(figsize=(15,14))
+    sep_width = 2
 
-    _, ax = plt.subplots(1,2)
+    # possibly add third axis to gray images
+    canvL = canvL.reshape(canvL.shape[0], canvL.shape[1], -1)
+    canvR = canvR.reshape(canvR.shape[0], canvR.shape[1], -1)
 
-    if canvL.ndim == 2:
-        ax[0].imshow(canvL, cmap='gray')
-    elif canvL.ndim == 3:
-        ax[0].imshow(np.flip(canvL, axis=2)) # from BGR -> RGB
+    # get dimensions of shapes
+    heightL, widthL, nchannelsL = canvL.shape
+    heightR, widthR, nchannelsR = canvR.shape
+
+    # check that canvases are compatible
+    if heightL != heightR or nchannelsL != nchannelsR:
+        raise ValueError(f'Height and number of color channels do not match: {heightL} vs {heightR} and {nchannelsL} vs {nchannelsR}')
     else:
-        raise ValueError(f'Can\'t handle dimensions {canvL.ndim}')
+        height = heightL
+        nchannels = nchannelsL
 
-    if canvR.ndim == 2:
-        ax[1].imshow(canvR, cmap='gray')
-    elif canvR.ndim == 3:
-        ax[1].imshow(np.flip(canvR, axis=2))    
-    else:
-        raise ValueError(f'Can\'t handle dimensions {canvR.ndim}')
 
-    plt.savefig(path)
+    line = np.zeros((height, sep_width, nchannels), dtype=canvL.dtype)
+    canvas = np.concatenate([canvL, line, canvR], axis=1)
+    cv2.imwrite(path, canvas)
+
+    return canvas
 
 def draw_lines(img, lines, pts):
     ''' 

@@ -24,19 +24,16 @@ def calculate_E_F(imgL, imgR, K, temp_path):
     print('SIFT_detector is called: ')
     sift = cv2.SIFT_create(contrastThreshold=0.02)
 
-    # find the keypoints and descriptors with SIFT
+    # find the keypoints and descriptors with SIFT # TODO: mask
     kp1, des1 = sift.detectAndCompute(imgL, None)
     kp2, des2 = sift.detectAndCompute(imgR, None)
 
     key_img = imgL.copy()
 
     # plots SIFT keypoints and descriptor
-    plt.figure(figsize=(15, 15))
-    plt.subplot(121), plt.imshow(
-        cv2.drawKeypoints(imgL, kp1, key_img, flags=cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS))
-    plt.subplot(122), plt.imshow(
-        cv2.drawKeypoints(imgR, kp2, key_img, flags=cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS))
-    plt.savefig(os.path.join(temp_path, 'sift_features.png'))
+    canvL = cv2.drawKeypoints(imgL, kp1, key_img, flags=cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
+    canvR = cv2.drawKeypoints(imgR, kp2, key_img, flags=cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
+    draw_stereo(canvL, canvR, os.path.join(temp_path, '04_sift_features.png'))
 
     # This matcher trains cv::flann::Index on a train descriptor collection and calls its nearest search methods
     # to find the best matches. So, this matcher may be faster when matching a large train collection than the brute
@@ -78,17 +75,14 @@ def calculate_E_F(imgL, imgR, K, temp_path):
     print(E)
 
     # cv2.drawMatchesKnn expects list of lists as matches.
-    img3 = cv2.drawMatchesKnn(imgL, kp1, imgR, kp2, good, flags=2, outImg=None)
+    canvMatches = cv2.drawMatchesKnn(imgL, kp1, imgR, kp2, good, flags=2, outImg=None)
 
     point = kp1[1].pt
     for x in kp1:
         if x.pt[0] < point[0]:
             point = x.pt
 
-    plt.figure(figsize=(15, 15))
-    plt.imshow(img3)
-    plt.savefig(os.path.join(temp_path, 'sift_matches.png'))
-    plt.close('all')
+    cv2.imwrite(os.path.join(temp_path, '05_sift_matches.png'), canvMatches)
 
     return E, F, pts1, pts2
 
@@ -98,17 +92,15 @@ def rectification(imgL, imgR, pts1, pts2, F):
     Recftify left and right images, given some keypoints and the
     Fundamental matrix
     
-    :param np.ndarray imgL: BGR image of left view
-    :param np.ndarray imgR: BGR image of right view
+    :param np.ndarray imgL: BGR or gray image of left view
+    :param np.ndarray imgR: BGR or gray image of right view
     :param np.ndarray imgR: keypoints in left image
     :param np.ndarray imgR: keypoint in right image
     '''
-    # transform left and right frames to grayscale
-    imgL = cv2.cvtColor(imgL, cv2.COLOR_BGR2GRAY)
-    imgR = cv2.cvtColor(imgR, cv2.COLOR_BGR2GRAY)
     
     # TODO: why *UN*calibrated?
-    info, HL, HR = cv2.stereoRectifyUncalibrated(pts1, pts2, F, imgL.shape)
+    heightL, widthL = imgL.shape[0], imgL.shape[1]
+    info, HL, HR = cv2.stereoRectifyUncalibrated(pts1, pts2, F, (widthL, heightL))
     rectL = cv2.warpPerspective(imgL, HL, (imgL.shape[1], imgL.shape[0]))
     rectR = cv2.warpPerspective(imgR, HR, (imgR.shape[1], imgR.shape[0]))
     return rectR, rectL
