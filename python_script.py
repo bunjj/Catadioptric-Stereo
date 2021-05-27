@@ -1,3 +1,5 @@
+from numpy import linalg
+from numpy.linalg.linalg import _linalgRealType
 from FrameIterator import FrameIterator
 import cv2
 import numpy as np
@@ -89,20 +91,20 @@ if K is None:
 if mirror_segmentation is None:
     mirror_segmentation = manual_split(img, verbose=1)
 
-#height, width, _ = img.shape
-#K = manual_K(width, height, 27.9, 36)
-
+height, width, _ = img.shape
 # split and flip image according to mirror position into stereo pair
 imgL, imgR, maskL, maskR = split_image(img, mirror_segmentation, flip='right', temp_path=temp_path, show=False)
 # calculate essential and fundamental matrices as well as the SIFT keypoints
 E, F, pts1, pts2 = calculate_E_F(imgL, imgR, K, temp_path)
 
-angle = 4 * np.pi / 180
-E_man = manual_E(np.array([0,1,0]), angle, np.array([0.3,0,0.01]))
-F_man = manual_F(K, E)
+E_man = manual_E(np.array([0,1,0]), 4.0 * np.pi / 180, np.array([0.3,0,0.01]))
+F_man = manual_F(K, E_man)
+print('\nmanual K:\n', K.round(2))
 print('manual E:\n', E_man.round(2))
 print('manual F:\n', F_man.round(2))
-getRotTrans(E_man)
+
+#F = F_man
+#E = E_man
 
 canvL, canvR = draw_epilines(imgL, imgR, pts1, pts2, F)
 draw_stereo(canvL, canvR, path.join(temp_path,'06_epilines_unrect.png'))

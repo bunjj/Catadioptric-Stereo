@@ -185,7 +185,11 @@ def manual_E(rot_axis, angle, translation):
     return np.matmul(skew(translation), R)
 
 def manual_F(K, E):
-    return np.linalg.inv(K)*E*K
+    # K transforms from 2D-H to pixel coordinates, e.g. [0,0,1] => [cx,cy]
+    # Fundamental works on pixel coordinates directly: F = K*E*inv(K) 
+    # => F * K = K * E
+    # => K^T * F^T = (K*E)^T
+    return np.linalg.solve(K.T, np.matmul(K,E).T).T
 
 def make_temp_dir(parent='temp'):
     time_now = time.strftime('%Y-%m-%d--%H-%M-%S')
