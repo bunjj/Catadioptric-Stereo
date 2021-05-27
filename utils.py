@@ -143,7 +143,7 @@ def getRotTrans(E):
     rot_vec, _ = cv2.Rodrigues(R)
     angle = np.linalg.norm(rot_vec) 
     rot_vec = rot_vec/angle
-    print(f'=> Rotation vector {rot_vec.flatten().round(2)} with angle {angle.round(2)}'),
+    print(f'=> Rotation vector {rot_vec.flatten().round(2)} with angle {(angle * 180 / np.pi).round(2)}°'),
     
     # Disentangle Translation vector
     distance = np.linalg.norm(t)
