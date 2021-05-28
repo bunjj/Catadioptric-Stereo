@@ -116,41 +116,31 @@ def getRotTrans(E):
     :return: Rotation and Translation
     '''
 
-    # singular values decomposition to get Rotation and Translation from left to right camera.
-    U, S, VT = computeSVD(E)
-    W = np.array([
-        [0, -1, 0],
-        [1, 0, 0],
-        [0, 0, 1]
-    ])
-    # rotation matrix
-    R = np.matmul(np.matmul(U, W.T), VT)
+    R1, R2, t = cv2.decomposeEssentialMat(E)
 
-    #R1, R2, t = cv2.decomposeEssentialMat(E)
-    #print('err: ', cv2.Rodrigues(R1)[0] - cv2.Rodrigues(R2)[0])
-    #print(R1.round(2), '\n', R2.round(2), '\n', t)
-    print('')
-    print(f'Rotation from one camera to the other:\n{R.round(2)}\n')
-    
-    # get translation in cross matrix, then vector
-    tx = np.matmul(U, np.matmul(W, np.matmul(S, U.T)))
-    mask = [[2, 1], [0, 2], [1, 0]]
-    t = tx[[2, 0, 1], [1, 2, 0]].reshape(-1, 1)
-    print(f'Translation from one camera to the other:\n{t.round(2)}\n')
-    
+    # Disentangle Rotation matrix R1
+    rot_vec1, _ = cv2.Rodrigues(R1)
+    angle1 = np.linalg.norm(rot_vec1) 
+    rot_vec1 = rot_vec1/angle1
+    sign1 = np.sign(rot_vec1[rot_vec1.nonzero()]).prod() # flip sign
+    rot_vec1, angle1 = rot_vec1 * sign1, angle1 * sign1
+    print(f'Rotation vector 1:{rot_vec1.flatten().round(2)} with angle {(angle1 * 180 / np.pi).round(2)}°')
 
-    # Disentangle Rotation matrix
-    rot_vec, _ = cv2.Rodrigues(R)
-    angle = np.linalg.norm(rot_vec) 
-    rot_vec = rot_vec/angle
-    print(f'=> Rotation vector {rot_vec.flatten().round(2)} with angle {(angle * 180 / np.pi).round(2)}°'),
+    # Disentangle Rotation matrix R2
+    rot_vec2, _ = cv2.Rodrigues(R2)
+    angle2 = np.linalg.norm(rot_vec2) 
+    rot_vec2 = rot_vec2/angle2
+
+    sign2 = np.sign(rot_vec2[rot_vec2.nonzero()]).prod() # flip sign
+    rot_vec2, angle2 = rot_vec2 * sign2, angle2 * sign2
+    print(f'Rotation vector 2:{rot_vec2.flatten().round(2)} with angle {(angle2 * 180 / np.pi).round(2)}°')
     
     # Disentangle Translation vector
-    distance = np.linalg.norm(t)
-    disp_vec = t / distance
-    print(f'=> Displacement vector {disp_vec.flatten().round(2)} with distance {distance.round(2)}')
+    length = np.linalg.norm(t)
+    disp_vec = t / length
+    print(f'Displacement vector {disp_vec.flatten().round(2)} with length {length.round(2)}')
 
-    return (R, t)
+    return (R1, t)
 
 #TODO: hardcoded intrinsics?;
 #At the moment hard coded intrinsics
@@ -190,6 +180,25 @@ def manual_F(K, E):
     # => F * K = K * E
     # => K^T * F^T = (K*E)^T
     return np.linalg.solve(K.T, np.matmul(K,E).T).T
+
+def catadioptric_EF(tilt_deg, pivot, K):
+    '''
+    Compute essential and fundamental matrices for a simplified catadioptric
+    stereo with a mirror tilted towards the camera. The rotation is aroung
+    the y axis and the pivot point lies in the xz-plane.
+    '''
+    tilt_rad = tilt_deg * np.pi / 180
+    axis = np.array([0,1,0])
+
+    px, pz = pivot[0], pivot[2]
+    offset_x = np.cos(tilt_rad) * np.sin(tilt_rad) * (pz + np.tan(tilt_rad)/px)
+    offset_z = np.sin(tilt_rad) * np.sin(tilt_rad) * (pz + np.tan(tilt_rad)/px)
+    
+    offset = np.array([offset_x, 0, offset_z])
+
+    E_man = manual_E(axis, 2*tilt_rad, 2*offset)
+    F_man = manual_F(K, E_man)
+    return E_man, F_man
 
 def make_temp_dir(parent='temp'):
     time_now = time.strftime('%Y-%m-%d--%H-%M-%S')

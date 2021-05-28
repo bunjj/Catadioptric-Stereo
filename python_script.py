@@ -98,8 +98,7 @@ imgL, imgR, maskL, maskR = split_image(img, mirror_segmentation, flip='right', t
 # calculate essential and fundamental matrices as well as the SIFT keypoints
 E, F, pts1, pts2 = calculate_E_F(imgL, imgR, K, temp_path)
 
-E_man = manual_E(np.array([0,1,0]), 4.0 * np.pi / 180, np.array([0.3,0,0.01]))
-F_man = manual_F(K, E_man)
+E_man, F_man = catadioptric_EF(-2, np.array([0.15, 0, 1]), K)
 print('\n K:\n', K.round(2))
 print('manual E:\n', E_man.round(2))
 print('manual F:\n', F_man.round(2))
