@@ -136,9 +136,8 @@ def getRotTrans(E):
     print(f'Rotation vector 2:{rot_vec2.flatten().round(2)} with angle {(angle2 * 180 / np.pi).round(2)}°')
     
     # Disentangle Translation vector
-    length = np.linalg.norm(t)
-    disp_vec = t / length
-    print(f'Displacement vector {disp_vec.flatten().round(2)} with length {length.round(2)}')
+    disp_vec = t / np.abs(t).max()
+    print(f'Displacement vector {disp_vec.flatten().round(2)}')
 
     return (R1, t)
 
@@ -195,6 +194,7 @@ def catadioptric_EF(tilt_deg, pivot, K):
     offset_z = np.sin(tilt_rad) * np.sin(tilt_rad) * (pz + np.tan(tilt_rad)/px)
     
     offset = np.array([offset_x, 0, offset_z])
+    print(2*offset)
 
     E_man = manual_E(axis, 2*tilt_rad, 2*offset)
     F_man = manual_F(K, E_man)

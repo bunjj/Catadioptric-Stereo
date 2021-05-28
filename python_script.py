@@ -98,13 +98,14 @@ imgL, imgR, maskL, maskR = split_image(img, mirror_segmentation, flip='right', t
 # calculate essential and fundamental matrices as well as the SIFT keypoints
 E, F, pts1, pts2 = calculate_E_F(imgL, imgR, K, temp_path)
 
-E_man, F_man = catadioptric_EF(-2, np.array([0.15, 0, 1]), K)
+E_man, F_man = catadioptric_EF(2, np.array([0.15, 0, 1]), K)
 print('\n K:\n', K.round(2))
-print('manual E:\n', E_man.round(2))
-print('manual F:\n', F_man.round(2))
+print('manual E:\n', (E_man / np.abs(E_man).max()).round(2))
+print('manual F:\n', (F_man / np.abs(F_man).max()).round(2))
 
 #F = F_man
 #E = E_man
+
 
 canvL, canvR = draw_epilines(imgL, imgR, pts1, pts2, F)
 draw_stereo(canvL, canvR, path.join(temp_path,'06_epilines_unrect.png'))
