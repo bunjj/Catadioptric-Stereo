@@ -1,7 +1,5 @@
 import numpy as np
 import cv2
-from matplotlib import pyplot as plt
-import matplotlib; matplotlib.use('agg')
 from utils import *
 
 
@@ -46,7 +44,7 @@ def manual_split(img, verbose=0):
 
 #TODO: rewrite function, give more reasonable names
 #TODO: finish doc
-def lk_segmentation(path, grid_size, verbose=0, show=False):
+def lk_segmentation(path, grid_size, iterater_max=100, verbose=0, show=False):
     ''' Computes automatic mirror detection for an input scene by applying 
     Lukas-Kanade optical flow
 
@@ -88,7 +86,7 @@ def lk_segmentation(path, grid_size, verbose=0, show=False):
         cv2.namedWindow(window_name, cv2.WINDOW_NORMAL)
 
     #TODO: can be made dynamic
-    iterater_max = 10 # number of frames for optical flow for mirror detection
+    #iterater_max = number of frames for optical flow for mirror detection
     for iteration in range(iterater_max):
         ret, frame = cap.read()
         frame_gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)

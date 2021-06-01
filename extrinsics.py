@@ -1,7 +1,5 @@
 import numpy as np
 import cv2
-from matplotlib import pyplot as plt
-import matplotlib; matplotlib.use('agg')
 from utils import *
 
 
@@ -56,6 +54,16 @@ def calculate_E_F(imgL, imgR, K, temp_path):
 
     pts1 = np.int32(pts1)
     pts2 = np.int32(pts2)
+
+   # method can be changed to RANSAC if wanted.
+    F, mask = cv2.findFundamentalMat(pts1, pts2, method=cv2.FM_7POINT)
+    print('\nFundamental Matrix: ')
+    print((F / np.abs(F).max()).round(2))
+    # (https://stackoverflow.com/questions/59014376/what-do-i-do-with-the-fundamental-matrix)
+
+    # We select only inlier points, needed for rectification
+    pts1 = pts1[mask.ravel() == 1]
+    pts2 = pts2[mask.ravel() == 1]
 
     # Essential matrix using camera intrinsics and inliers detected by fundamental matrix
     # (https://docs.opencv.org/master/d9/d0c/group__calib3d.html#ga0c86f6478f36d5be6e450751bbf4fec0)
