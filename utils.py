@@ -175,10 +175,12 @@ def manual_E(rot_axis, angle, translation):
 
 def manual_F(K, E):
     # K transforms from 2D-H to pixel coordinates, e.g. [0,0,1] => [cx,cy]
-    # Fundamental works on pixel coordinates directly: F = K*E*inv(K) 
-    # => F * K = K * E
-    # => K^T * F^T = (K*E)^T
-    return np.linalg.solve(K.T, np.matmul(K,E).T).T
+    # Fundamental works on pixel coordinates directly: E = K^T*F*K 
+    # => F = inv(K^T) * E *inv(K)
+    Kinv = np.linalg.inv(K)
+    F = np.matmul(Kinv.T, np.matmul(E, Kinv))
+    return F
+    #return np.linalg.solve(K.T, np.matmul(K,E).T).T
 
 def catadioptric_EF(tilt_deg, pivot, K):
     '''
@@ -190,9 +192,11 @@ def catadioptric_EF(tilt_deg, pivot, K):
     axis = np.array([0,1,0])
 
     px, pz = pivot[0], pivot[2]
-    offset_x = np.cos(tilt_rad) * np.sin(tilt_rad) * (pz + np.tan(tilt_rad)/px)
-    offset_z = np.sin(tilt_rad) * np.sin(tilt_rad) * (pz + np.tan(tilt_rad)/px)
+    alpha = tilt_rad + np.arcsin(px/pz)
+    dist = np.sin(alpha) * np.sqrt((pz**2 + px**2))
     
+    offset_x = np.cos(tilt_rad) * dist
+    offset_z = np.sin(tilt_rad) * dist
     offset = np.array([offset_x, 0, offset_z])
     print(2*offset)
 
@@ -229,14 +233,14 @@ def draw_mirror_line(x_split, path, real_output_path):
     cv2.imwrite(real_output_path + '/imgR.png', imgR)
     cv2.imwrite(real_output_path + '/select_border.png', img)
 
-def draw_stereo(canvL, canvR, path):
+def draw_stereo(canvL, canvR, path=None):
     '''
     Draws two gray or BGR images into a matplotlib figure with subplots
     and stores the result into a file specified by path.
     :param numpy.ndarray canvL: left canvas to draw
     :param numpy.ndarray canvR: right canvas to draw
     :param path: path where file should be stored
-    :return: None
+    :return: canvas with the two canvases side by side
     '''
     sep_width = 2
 
@@ -258,7 +262,8 @@ def draw_stereo(canvL, canvR, path):
 
     line = np.zeros((height, sep_width, nchannels), dtype=canvL.dtype)
     canvas = np.concatenate([canvL, line, canvR], axis=1)
-    cv2.imwrite(path, canvas)
+    if path is not None:
+        cv2.imwrite(path, canvas)
 
     return canvas
 
