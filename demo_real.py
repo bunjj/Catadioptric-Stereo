@@ -16,26 +16,27 @@ from os import path
 
 args = make_parser().parse_args()
 
-opticalflow_path ='data/blender/optical_flow.avi'
-intrinsics_path = 'data/blender/calibration.avi'
+opticalflow_path ='data/real/opticalflow/relief-scenes/MVI_2399.MP4'
+intrinsics_path = 'data/real/calibration/*.JPG'
 temp_path = make_temp_dir('temp')
 
-input_path = 'data/blender/tilted.png'
+input_path = 'data/real/catadioptric_f-6-mm_2.jpg'
 output_path = os.path.join(temp_path,'disparity.png')
 
 # parameters for intrinsics calibration
 intrinsics_params = dict(        
-    chess_size=(5,5),
-    tile_size=0.25, # <= 14 mm
+    chess_size=(9,6),
+    tile_size=0.14, # <= 14 mm
     partition='left',
     flip=False,
+    scale=0.8,
     verbose=1,
     show=True)
 
 # parameters for lukas kanade calibration
 lk_segmentation_params = dict(
     grid_size=100,
-    iterater_max=10,
+    iterater_max=100,
     verbose=1,
     show=True)
 
@@ -77,7 +78,7 @@ else: mirror_segmentation=None
 
 # load input image
 img = FrameIterator(input_path).first()
-img = getDownSampledImg(1, img)
+img = getDownSampledImg(0.5, img)
 print(f'img.shape={img.shape}')
 cv2.imwrite(path.join(temp_path,'00_input.png'), img)
 
@@ -87,13 +88,13 @@ cv2.imwrite(path.join(temp_path,'00_input.png'), img)
 #TODO: wouldn't it make sense to add this above where we add the parameters from the parser? probably not that important though
 if K is None:
     width, height = img.shape[1], img.shape[0]
-    K = manual_K(width, height, focal_length_mm=27.9, sensor_width_mm=36)
+    K = manual_K(width, height, focal_length_mm=6, sensor_width_mm=76)
 if mirror_segmentation is None:
     mirror_segmentation = manual_split(img, verbose=1)
 
 height, width, _ = img.shape
 # split and flip image according to mirror position into stereo pair
-imgL, imgR, maskL, maskR = split_image(img, mirror_segmentation, flip='left', temp_path=temp_path, show=True)
+imgL, imgR, maskL, maskR = split_image(img, mirror_segmentation, flip='right', temp_path=temp_path, show=True)
 # calculate essential and fundamental matrices as well as the SIFT keypoints
 E, F, pts1, pts2 = calculate_E_F(imgL, imgR, K, temp_path)
 

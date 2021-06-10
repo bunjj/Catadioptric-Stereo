@@ -1,3 +1,5 @@
+from numpy import linalg
+from numpy.linalg.linalg import _linalgRealType
 from FrameIterator import FrameIterator
 import cv2
 import numpy as np
@@ -16,28 +18,18 @@ from os import path
 
 args = make_parser().parse_args()
 
-opticalflow_path ='data/blender/optical_flow.avi'
-intrinsics_path = 'data/blender/calibration.avi'
+opticalflow_path = None
+intrinsics_path = None
 temp_path = make_temp_dir('temp')
 
-input_path = 'data/blender/tilted.png'
+input_path = 'data/plant.jpg'
 output_path = os.path.join(temp_path,'disparity.png')
 
 # parameters for intrinsics calibration
-intrinsics_params = dict(        
-    chess_size=(5,5),
-    tile_size=0.25, # <= 14 mm
-    partition='left',
-    flip=False,
-    verbose=1,
-    show=True)
+intrinsics_params = dict()
 
 # parameters for lukas kanade calibration
-lk_segmentation_params = dict(
-    grid_size=100,
-    iterater_max=10,
-    verbose=1,
-    show=True)
+lk_segmentation_params = dict()
 
 ###############################################################################
 # Intrinsics Calibration
@@ -77,7 +69,7 @@ else: mirror_segmentation=None
 
 # load input image
 img = FrameIterator(input_path).first()
-img = getDownSampledImg(1, img)
+img = getDownSampledImg(0.25, img)
 print(f'img.shape={img.shape}')
 cv2.imwrite(path.join(temp_path,'00_input.png'), img)
 
@@ -87,15 +79,16 @@ cv2.imwrite(path.join(temp_path,'00_input.png'), img)
 #TODO: wouldn't it make sense to add this above where we add the parameters from the parser? probably not that important though
 if K is None:
     width, height = img.shape[1], img.shape[0]
-    K = manual_K(width, height, focal_length_mm=27.9, sensor_width_mm=36)
+    K = manual_K(width, height, focal_length_mm=25, sensor_width_mm=36)
 if mirror_segmentation is None:
     mirror_segmentation = manual_split(img, verbose=1)
 
 height, width, _ = img.shape
 # split and flip image according to mirror position into stereo pair
-imgL, imgR, maskL, maskR = split_image(img, mirror_segmentation, flip='left', temp_path=temp_path, show=True)
+imgL, imgR, maskL, maskR = split_image(img, mirror_segmentation, flip='right', temp_path=temp_path, show=False)
 # calculate essential and fundamental matrices as well as the SIFT keypoints
 E, F, pts1, pts2 = calculate_E_F(imgL, imgR, K, temp_path)
+
 
 window_name = 'Disparity Computation'
 cv2.namedWindow(window_name, cv2.WINDOW_NORMAL)
@@ -121,8 +114,8 @@ cv2.imshow(window_name, canv)
 cv2.waitKey(0)
 
 # compute disparity using semi-global block matching
-stereo = cv2.StereoSGBM_create(minDisparity=-20, numDisparities=50, blockSize=18, speckleRange=50,
-                                speckleWindowSize=30, uniquenessRatio=9)
+stereo = cv2.StereoSGBM_create(minDisparity=00, numDisparities=16, blockSize=18, speckleRange=50,
+                                speckleWindowSize=30, uniquenessRatio=5)
 disparity = stereo.compute(rectL, rectR)
 
 # mask disparity
@@ -135,6 +128,6 @@ disparity[mask[:,:,0]==0] = disparity.min()
 ###############################################################################
 
 im = plt.imshow(disparity)
-plt.colorbar(im,fraction=0.046, pad=0.04)
-plt.show()
+plt.colorbar(im, fraction=0.046, pad=0.04)
 plt.savefig(output_path)
+plt.show()
