@@ -6,7 +6,7 @@ import cv2
 import time
 import os
 
-def split_image(img, x_split, flip, temp_path, show=False):
+def split_image(img, x_split, flip, temp_path=None, show=False):
     """
     Split image horizontally at position x_split, crop both sides
     to a common width and flip one side.    
@@ -23,6 +23,15 @@ def split_image(img, x_split, flip, temp_path, show=False):
         window_name = 'Split Image into Stereo Pair'
         cv2.namedWindow(window_name, cv2.WINDOW_NORMAL)
 
+    if temp_path is not None:
+        draw_path1 = os.path.join(temp_path,'01_sidebyside.png')
+        draw_path2 = os.path.join(temp_path,'02_masked.png')
+        draw_path3 = os.path.join(temp_path,'03_flipped.png')
+    else:
+        draw_path1 = None
+        draw_path2 = None
+        draw_path3 = None
+
     height, width, _ = img.shape
     widthL = x_split
     widthR = width - x_split
@@ -30,7 +39,7 @@ def split_image(img, x_split, flip, temp_path, show=False):
     # du images
     imgL = img.copy()
     imgR = img.copy()
-    canvas = draw_stereo(imgL, imgR, os.path.join(temp_path,'01_sidebyside.png'))
+    canvas = draw_stereo(imgL, imgR, draw_path1)
 
     if show: 
         cv2.imshow(window_name, canvas)
@@ -43,7 +52,7 @@ def split_image(img, x_split, flip, temp_path, show=False):
     maskR[:, :x_split, :] = 0
     imgL = np.multiply(maskL, imgL) 
     imgR = np.multiply(maskR, imgR) 
-    canvas = draw_stereo(imgL, imgR, os.path.join(temp_path,'02_masked.png'))
+    canvas = draw_stereo(imgL, imgR, draw_path2)
 
     if show: 
         cv2.imshow(window_name, canvas)
@@ -56,9 +65,12 @@ def split_image(img, x_split, flip, temp_path, show=False):
     elif flip=='right':
         imgR = cv2.flip(imgR, 1)
         maskR = cv2.flip(maskR, 1)
+    else:
+        raise ValueError('Unkown flip specification: ' + flip)
+
 
     # draw flipped image
-    canvas = draw_stereo(imgL, imgR, os.path.join(temp_path,'03_flipped.png'))
+    canvas = draw_stereo(imgL, imgR, draw_path3)
     if show: 
         cv2.imshow(window_name, canvas)
         cv2.waitKey(0)
