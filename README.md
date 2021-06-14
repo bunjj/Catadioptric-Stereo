@@ -33,3 +33,6 @@ The demos will use defaut values for the camera intrinsics. To calibrate using c
 2. To run the plant scene, we recommend using ```python demo_plant.py```, since there are no optical flow and intrinsics available.
 
 3. To run the real scene, we reccommend using  ```python demo_real.py -i```, since the optical flow does only work on blender data.
+
+
+When a computation is done and the result is shown, then the window waits for a key to be pressed to continue. 
