@@ -22,7 +22,7 @@ opticalflow_path = None
 intrinsics_path = None
 temp_path = make_temp_dir('temp')
 
-input_path = 'data/plant.jpg'
+input_path = 'data/plant/plant.jpg'
 output_path = os.path.join(temp_path,'disparity.png')
 
 # parameters for intrinsics calibration

@@ -17,10 +17,10 @@ from os import path
 args = make_parser().parse_args()
 
 opticalflow_path ='data/blender/optical_flow.avi'
-intrinsics_path = 'data/blender/calibration2/0*.png'
+intrinsics_path = 'data/blender/calibration/*.png'
 temp_path = make_temp_dir('temp')
 
-input_path = 'data/blender/calibration2/out.png'
+input_path = 'data/blender/blender.png'
 output_path = os.path.join(temp_path,'disparity.png')
 
 # parameters for intrinsics calibration
@@ -67,6 +67,9 @@ if args.mirror:
         path=opticalflow_path,
         **lk_segmentation_params
         )
+    
+    # optical flow frames are at 50% of real resolution
+    mirror_segmentation = mirror_segmentation * 2 
 
 else: mirror_segmentation=None
 

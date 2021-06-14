@@ -119,7 +119,7 @@ def calibrateChessboard(
         if show: # Draw corners and and display the corners
             view = cv2.drawChessboardCorners(view, (width, height), points_pix, ret)
             cv2.imshow(window_name, view)
-            cv2.waitKey(0)
+            cv2.waitKey(1)
 
     if show: cv2.destroyWindow(window_name)
 
@@ -251,8 +251,8 @@ def stereoCalibrateChessboard(
         if show: # Draw corners and and display the corners
             viewL = cv2.drawChessboardCorners(viewL, (width, height), pointsL_pix, retL)
             viewR = cv2.drawChessboardCorners(viewR, (width, height), pointsR_pix, retR)
-            cv2.imshow(window_name, draw_stereo(viewL, viewR, 'temp/'+str(frame_iter.index)+'.png'))
-            cv2.waitKey(0)
+            cv2.imshow(window_name, draw_stereo(viewL, viewR))
+            cv2.waitKey(1)
 
     if show: cv2.destroyWindow(window_name)
 

@@ -16,11 +16,11 @@ from os import path
 
 args = make_parser().parse_args()
 
-opticalflow_path ='data/real/opticalflow/relief-scenes/MVI_2399.MP4'
+opticalflow_path ='data/real/opticalflow/MVI_2399.MP4'
 intrinsics_path = 'data/real/calibration/*.JPG'
 temp_path = make_temp_dir('temp')
 
-input_path = 'data/real/catadioptric_f-6-mm_2.jpg'
+input_path = 'data/real/catadioptric_f-6-mm.jpg'
 output_path = os.path.join(temp_path,'disparity.png')
 
 # parameters for intrinsics calibration
@@ -31,7 +31,7 @@ intrinsics_params = dict(
     #flip=False,
     scale=0.8,
     verbose=1,
-    show=False)
+    show=True)
 
 # parameters for lukas kanade calibration
 lk_segmentation_params = dict(
@@ -50,7 +50,7 @@ if args.intrinsic:
     mirror_seg_intr = manual_split(FrameIterator(intrinsics_path).first())
 
     # compute intrinsics matrix K from Chessboard 
-    intr = stereoCalibrateChessboard(
+    intr, extr = stereoCalibrateChessboard(
         filepattern=intrinsics_path,
         split_position=mirror_seg_intr,
         **intrinsics_params)
@@ -122,9 +122,14 @@ canv = draw_stereo(maskL * 255, maskR * 255, path.join(temp_path,'08_rectificati
 cv2.imshow(window_name, canv)
 cv2.waitKey(0)
 
+rectL = getDownSampledImg(0.5, rectL)
+rectR = getDownSampledImg(0.5, rectR)
+maskL = getDownSampledImg(0.5, maskL)
+maskR = getDownSampledImg(0.5, maskR)
+
 # compute disparity using semi-global block matching
-stereo = cv2.StereoSGBM_create(minDisparity=-20, numDisparities=50, blockSize=18, speckleRange=50,
-                                speckleWindowSize=30, uniquenessRatio=9)
+stereo = cv2.StereoSGBM_create(minDisparity=-5, numDisparities=48, blockSize=16, speckleRange=0,
+    speckleWindowSize=0, uniquenessRatio=10)
 disparity = stereo.compute(rectL, rectR)
 
 # mask disparity
