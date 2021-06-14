@@ -87,7 +87,6 @@ cv2.imwrite(path.join(temp_path,'00_input.png'), img)
 
 # fill missing values with defaults
 
-#TODO: wouldn't it make sense to add this above where we add the parameters from the parser? probably not that important though
 if K is None:
     width, height = img.shape[1], img.shape[0]
     K = manual_K(width, height, focal_length_mm=27.9, sensor_width_mm=36)
@@ -147,7 +146,7 @@ disparity[mask[:,:,0]==0] = disparity.min()
 
 
 ###############################################################################
-#  Plot Estimated Depth Map
+#  Plot Estimated Disparity Map
 ###############################################################################
 
 im = plt.imshow(disparity)

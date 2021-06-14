@@ -138,7 +138,7 @@ disparity[mask[:,:,0]==0] = disparity.min()
 
 
 ###############################################################################
-#  Plot Estimated Depth Map
+#  Plot Estimated Disparity Map
 ###############################################################################
 
 im = plt.imshow(disparity)
