@@ -122,7 +122,7 @@ def project_by_object_utils(cam, point):
 # ----------------------------------------------------------
 if __name__ == "__main__":
     # Insert your camera name here
-    cam = bpy.data.objects['Camera.001']
+    cam = bpy.data.objects['Camera']
     P, K, RT = get_3x4_P_matrix_from_blender(cam)
     print("K")
     print(K)
@@ -168,4 +168,4 @@ if __name__ == "__main__":
     # Bonus code: save the 3x4 P matrix into a plain text file
     # Don't forget to import numpy for this
     nP = np.matrix(P)
-    np.savetxt("/tmp/P3x4.txt", nP)
+    #np.savetxt("/tmp/P3x4.txt", nP)
