@@ -3,7 +3,7 @@ import cv2
 import numpy as np
 from matplotlib import pyplot as plt
 
-from intrinsics import calibrateChessboard
+from intrinsics import calibrateChessboard, stereoCalibrateChessboard
 from segmentation import manual_split, lk_segmentation
 from extrinsics import calculate_E_F, rectification
 from utils import * # contains utility functions
@@ -27,11 +27,11 @@ output_path = os.path.join(temp_path,'disparity.png')
 intrinsics_params = dict(        
     chess_size=(9,6),
     tile_size=0.14, # <= 14 mm
-    partition='left',
-    flip=False,
+    mirror='left',
+    #flip=False,
     scale=0.8,
     verbose=1,
-    show=True)
+    show=False)
 
 # parameters for lukas kanade calibration
 lk_segmentation_params = dict(
@@ -50,10 +50,11 @@ if args.intrinsic:
     mirror_seg_intr = manual_split(FrameIterator(intrinsics_path).first())
 
     # compute intrinsics matrix K from Chessboard 
-    K = calibrateChessboard(
+    intr = stereoCalibrateChessboard(
         filepattern=intrinsics_path,
         split_position=mirror_seg_intr,
         **intrinsics_params)
+    K = intr['KL']
 
 else: K=None
 
@@ -138,4 +139,3 @@ disparity[mask[:,:,0]==0] = disparity.min()
 im = plt.imshow(disparity)
 plt.colorbar(im,fraction=0.046, pad=0.04)
 plt.show()
-plt.savefig(output_path)

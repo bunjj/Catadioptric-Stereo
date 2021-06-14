@@ -163,8 +163,9 @@ def get_intrinsics():
 
 def manual_K(width_px, height_px, focal_length_mm, sensor_width_mm):
 
-    aspect_ratio = height_px / width_px
-    sensor_height_mm = aspect_ratio * sensor_width_mm
+    aspect_ratio = width_px / height_px
+    # assuming aspect ratio of sensor == aspect ratio of image
+    sensor_height_mm = sensor_width_mm / aspect_ratio 
 
     K = np.zeros((3,3))
 

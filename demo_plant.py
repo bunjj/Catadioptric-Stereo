@@ -114,8 +114,8 @@ cv2.imshow(window_name, canv)
 cv2.waitKey(0)
 
 # compute disparity using semi-global block matching
-stereo = cv2.StereoSGBM_create(minDisparity=00, numDisparities=16, blockSize=18, speckleRange=50,
-                                speckleWindowSize=30, uniquenessRatio=5)
+stereo = cv2.StereoSGBM_create(minDisparity=-5, numDisparities=48, blockSize=18, speckleRange=0,
+                                speckleWindowSize=0, uniquenessRatio=10)
 disparity = stereo.compute(rectL, rectR)
 
 # mask disparity
@@ -129,5 +129,4 @@ disparity[mask[:,:,0]==0] = disparity.min()
 
 im = plt.imshow(disparity)
 plt.colorbar(im, fraction=0.046, pad=0.04)
-plt.savefig(output_path)
 plt.show()
