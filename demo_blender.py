@@ -20,7 +20,7 @@ opticalflow_path ='data/blender/optical_flow.avi'
 intrinsics_path = 'data/blender/calibration2/0*.png'
 temp_path = make_temp_dir('temp')
 
-input_path = 'data/blender/calibration/out.png'
+input_path = 'data/blender/calibration2/out.png'
 output_path = os.path.join(temp_path,'disparity.png')
 
 # parameters for intrinsics calibration
@@ -101,14 +101,6 @@ _, F, pts1, pts2 = calculate_E_F(imgL, imgR, K, temp_path)
 #    F = extr['F']
 
 print(K)
-#large out.png
-#F = np.array([[ 1.35360102e-09,  8.05488102e-07, -4.12201090e-04],
-# [ 1.08053621e-06,  6.25290670e-11,  3.90944035e-02],
-# [-6.19875777e-04, -4.09183999e-02,  1.00000000e+00]])
-#small out.png
-F = np.array([[ 8.12799201e-09,  3.62457448e-07, -1.70005767e-04],
- [-2.35983083e-07, -4.04092160e-09, -8.17273402e-04],
- [ 1.24344350e-04,  7.36169661e-04,  2.91847136e-02]])
 print(F)
 
 window_name = 'Disparity Computation'
@@ -135,19 +127,15 @@ cv2.imshow(window_name, canv)
 cv2.waitKey(0)
 
 
-#rectL = getDownSampledImg(0.75, rectL)
-#rectR = getDownSampledImg(0.75, rectR)
-#maskL = getDownSampledImg(0.75, maskL)
-#maskR = getDownSampledImg(0.75, maskR)
+# downsample for smoother disparity map
+rectL = getDownSampledImg(0.5, rectL)
+rectR = getDownSampledImg(0.5, rectR)
+maskL = getDownSampledImg(0.5, maskL)
+maskR = getDownSampledImg(0.5, maskR)
+
 # compute disparity using semi-global block matching
-#stereo = cv2.StereoSGBM_create(minDisparity=-20, numDisparities=48, blockSize=18, speckleRange=48,
-#                                speckleWindowSize=30, uniquenessRatio=9)
 stereo = cv2.StereoSGBM_create(minDisparity=-5, numDisparities=48, blockSize=16, speckleRange=0,
     speckleWindowSize=0, uniquenessRatio=10)
-nDisp=48
-stereo = cv2.StereoSGBM_create(minDisparity=-nDisp//2, numDisparities=nDisp, blockSize=16)
-#stereo = cv2.StereoSGBM_create(minDisparity=-nDisp//2, numDisparities=nDisp, blockSize=18, speckleRange=0,
-#    speckleWindowSize=100, uniquenessRatio=10)
 disparity = stereo.compute(rectL, rectR)
 
 # mask disparity
