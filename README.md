@@ -1,5 +1,6 @@
 # Catadioptric-Stereo
-3D vision project
+Project Work for a MSc 3D Vision course offered at ETH Zurich (252-0579-00L) 
+Check out **3D_Final_Raport.pdf** for explenations of the Algorithm used.
 
 ## Installation
 
