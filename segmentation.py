@@ -127,11 +127,7 @@ def lk_segmentation(path, grid_size, iterater_max=100, verbose=0, show=False):
         old_gray = frame_gray.copy()
         p0 = good_new.reshape(-1, 1, 2)
     
-    if show:
-        cv2.waitKey(0)
-        cv2.destroyWindow(window_name)
 
-    # TODO: Threshold can be made dynamically
     # Assigns 1 and -1 if the point was moving right or left from frame to frame. Afterwards it checks if
     # the point was over the last frames range(iterater_max) moving right or left with a threshold of 0.7.
     # Then it looks for the latest 1 and first -1 in the list. So this code works just if the frame moves towards
@@ -154,9 +150,29 @@ def lk_segmentation(path, grid_size, iterater_max=100, verbose=0, show=False):
         else:
             point_movement.append(0)
 
+    if ('latest_positive_value_x_coordinate' not in locals() or
+        'first_negative_value_x_coordinate' not in locals()):
+        raise ValueError('Did not find a valid optical flow to separate image.')
+    
     mirror_position_x = int((latest_positive_value_x_coordinate + first_negative_value_x_coordinate) / 2)
 
     if verbose >= 1: print(f'automatically detected mirror position: {mirror_position_x}')
+
+    
+
+    if show:
+
+        sep_width = 2
+        height, _, nchannels = img.shape
+
+        canvL = img[:,:mirror_position_x, :]
+        canvR = img[:,mirror_position_x:, :]
+        line = np.zeros((height, sep_width, nchannels), dtype=canvL.dtype)
+        canvas = np.concatenate([canvL, line, canvR], axis=1)
+        
+        cv2.imshow(window_name, canvas)
+        cv2.waitKey(0)
+        cv2.destroyWindow(window_name)
 
     return mirror_position_x
 

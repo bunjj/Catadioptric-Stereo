@@ -47,7 +47,7 @@ def calculate_E_F(imgL, imgR, K, temp_path):
     pts2 = []
 
     for i, (m, n) in enumerate(matches):
-        if m.distance < 0.8 * n.distance:
+        if True: #m.distance < 0.8 * n.distance: not needed anymore because of sift
             good.append([m])
             pts2.append(kp2[m.trainIdx].pt)
             pts1.append(kp1[m.queryIdx].pt)
@@ -62,8 +62,8 @@ def calculate_E_F(imgL, imgR, K, temp_path):
     # (https://stackoverflow.com/questions/59014376/what-do-i-do-with-the-fundamental-matrix)
 
     # We select only inlier points, needed for rectification
-    pts1 = pts1[mask.ravel() == 1]
-    pts2 = pts2[mask.ravel() == 1]
+    #pts1 = pts1[mask.ravel() == 1]
+    #pts2 = pts2[mask.ravel() == 1]
 
     # Essential matrix using camera intrinsics and inliers detected by fundamental matrix
     # (https://docs.opencv.org/master/d9/d0c/group__calib3d.html#ga0c86f6478f36d5be6e450751bbf4fec0)
@@ -112,3 +112,9 @@ def rectification(imgL, imgR, pts1, pts2, F):
     rectL = cv2.warpPerspective(imgL, HL, (imgL.shape[1], imgL.shape[0]))
     rectR = cv2.warpPerspective(imgR, HR, (imgR.shape[1], imgR.shape[0]))
     return rectL, rectR
+
+def stereoRectify(imgL, imgR, KL, KR, DL, DR, R, T):
+    imgSize = imgL.shape[1], imgL.shapeR[1]
+    R1, R2, P1, P2, Q, roi1, roi2 = cv2.stereoRectify(KL, DL, KR, DR, imgSize, R, T)
+
+    cv2.initUndistortRectifyMap()

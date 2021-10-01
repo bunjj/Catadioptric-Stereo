@@ -3,7 +3,7 @@ import cv2
 import numpy as np
 from matplotlib import pyplot as plt
 
-from intrinsics import calibrateChessboard
+from intrinsics import calibrateChessboard, stereoCalibrateChessboard
 from segmentation import manual_split, lk_segmentation
 from extrinsics import calculate_E_F, rectification
 from utils import * # contains utility functions
@@ -17,18 +17,17 @@ from os import path
 args = make_parser().parse_args()
 
 opticalflow_path ='data/blender/optical_flow.avi'
-intrinsics_path = 'data/blender/calibration.avi'
+intrinsics_path = 'data/blender/calibration/*.png'
 temp_path = make_temp_dir('temp')
 
-input_path = 'data/blender/tilted.png'
+input_path = 'data/blender/blender.png'
 output_path = os.path.join(temp_path,'disparity.png')
 
 # parameters for intrinsics calibration
 intrinsics_params = dict(        
     chess_size=(5,5),
     tile_size=0.25, # <= 14 mm
-    partition='left',
-    flip=False,
+    mirror='left',
     verbose=1,
     show=True)
 
@@ -49,10 +48,11 @@ if args.intrinsic:
     mirror_seg_intr = manual_split(FrameIterator(intrinsics_path).first())
 
     # compute intrinsics matrix K from Chessboard 
-    K = calibrateChessboard(
+    intr, extr = stereoCalibrateChessboard(
         filepattern=intrinsics_path,
         split_position=mirror_seg_intr,
         **intrinsics_params)
+    K = intr['KL']
 
 else: K=None
 
@@ -67,6 +67,9 @@ if args.mirror:
         path=opticalflow_path,
         **lk_segmentation_params
         )
+    
+    # optical flow frames are at 50% of real resolution
+    mirror_segmentation = mirror_segmentation * 2 
 
 else: mirror_segmentation=None
 
@@ -84,7 +87,6 @@ cv2.imwrite(path.join(temp_path,'00_input.png'), img)
 
 # fill missing values with defaults
 
-#TODO: wouldn't it make sense to add this above where we add the parameters from the parser? probably not that important though
 if K is None:
     width, height = img.shape[1], img.shape[0]
     K = manual_K(width, height, focal_length_mm=27.9, sensor_width_mm=36)
@@ -95,7 +97,13 @@ height, width, _ = img.shape
 # split and flip image according to mirror position into stereo pair
 imgL, imgR, maskL, maskR = split_image(img, mirror_segmentation, flip='left', temp_path=temp_path, show=True)
 # calculate essential and fundamental matrices as well as the SIFT keypoints
-E, F, pts1, pts2 = calculate_E_F(imgL, imgR, K, temp_path)
+
+_, F, pts1, pts2 = calculate_E_F(imgL, imgR, K, temp_path)
+#if 'extr' in locals():
+#    F = extr['F']
+
+print(K)
+print(F)
 
 window_name = 'Disparity Computation'
 cv2.namedWindow(window_name, cv2.WINDOW_NORMAL)
@@ -120,21 +128,27 @@ canv = draw_stereo(maskL * 255, maskR * 255, path.join(temp_path,'08_rectificati
 cv2.imshow(window_name, canv)
 cv2.waitKey(0)
 
+
+# downsample for smoother disparity map
+rectL = getDownSampledImg(0.5, rectL)
+rectR = getDownSampledImg(0.5, rectR)
+maskL = getDownSampledImg(0.5, maskL)
+maskR = getDownSampledImg(0.5, maskR)
+
 # compute disparity using semi-global block matching
-stereo = cv2.StereoSGBM_create(minDisparity=-20, numDisparities=50, blockSize=18, speckleRange=50,
-                                speckleWindowSize=30, uniquenessRatio=9)
+stereo = cv2.StereoSGBM_create(minDisparity=-5, numDisparities=48, blockSize=16, speckleRange=0,
+    speckleWindowSize=0, uniquenessRatio=10)
 disparity = stereo.compute(rectL, rectR)
 
 # mask disparity
 mask = np.logical_and(maskL, maskR).astype(np.uint8)
-disparity = np.multiply(mask[:,:,0], disparity)
+disparity[mask[:,:,0]==0] = disparity.min()
 
 
 ###############################################################################
-#  Plot Estimated Depth Map
+#  Plot Estimated Disparity Map
 ###############################################################################
 
 im = plt.imshow(disparity)
 plt.colorbar(im,fraction=0.046, pad=0.04)
 plt.show()
-plt.savefig(output_path)
